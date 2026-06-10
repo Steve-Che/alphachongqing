@@ -28,6 +28,8 @@ cp .env.example .env
 | `DATABASE_URL` | PostgreSQL 连接串（推荐 [Neon](https://neon.tech)） |
 | `AUTH_SECRET` | `openssl rand -base64 32` 生成 |
 | `AUTH_URL` | `http://localhost:3000` |
+| `RESEND_API_KEY` | （可选）找回密码邮件，[Resend](https://resend.com) |
+| `EMAIL_FROM` | （可选）发件人，如 `阿尔法重庆 <noreply@yourdomain.com>` |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob 令牌（图片上传，可选） |
 
 ### 2. 数据库
@@ -96,7 +98,19 @@ npx vercel --prod
 - 街道留言、店铺留言板
 - 管理员邀请码后台 `/admin/invites`
 
+## 找回密码
+
+1. 登录页点击「忘记密码？」
+2. 输入注册邮箱，收到重置链接（需配置 `RESEND_API_KEY` 与 `EMAIL_FROM`）
+3. 打开链接设置新密码
+
+本地开发未配置邮件时，重置链接会打印在服务端终端日志中。
+
 ## 常见问题
+
+### 控制台出现 `content.js` / `page-events.js` 报错
+
+多为浏览器扩展（如 **Bardeen**）注入脚本导致，与本站无关，可忽略或在扩展管理中限制对本站的访问。
 
 ### 控制台出现 `page-events.js` / `handleKeyDown` 报错
 

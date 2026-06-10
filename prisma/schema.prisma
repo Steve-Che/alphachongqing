@@ -56,8 +56,23 @@ model User {
   imageAssets    ImageAsset[]
   guestbookEntries GuestbookEntry[]
   streetMessages StreetMessage[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([username])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model InviteCode {

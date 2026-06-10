@@ -53,7 +53,14 @@ export async function registerUser(formData: FormData): Promise<ActionResult> {
       });
     });
 
-    await signIn("credentials", { email, password, redirectTo: "/" });
+    const signInResult = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+    if (signInResult?.error) {
+      return { ok: false, error: "注册成功但登录失败，请手动登录" };
+    }
     return { ok: true };
   } catch (e) {
     if (e instanceof AuthError) {
@@ -75,9 +82,19 @@ export async function loginUser(formData: FormData): Promise<ActionResult> {
   }
 
   try {
-    await signIn("credentials", { email, password, redirectTo: "/" });
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      return { ok: false, error: "邮箱或密码错误" };
+    }
+
     return { ok: true };
-  } catch {
-    return { ok: false, error: "邮箱或密码错误" };
+  } catch (e) {
+    console.error("[auth] login failed:", e);
+    return { ok: false, error: "登录服务暂时不可用，请稍后再试" };
   }
 }

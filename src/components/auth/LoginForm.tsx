@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loginUser } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,12 @@ export function LoginForm() {
         <Input name="email" type="email" required placeholder="you@example.com" />
       </div>
       <div>
-        <label className="mb-1 block text-sm text-stone-600">密码</label>
+        <div className="mb-1 flex items-center justify-between">
+          <label className="text-sm text-stone-600">密码</label>
+          <Link href="/forgot-password" className="text-xs text-accent hover:underline">
+            忘记密码？
+          </Link>
+        </div>
         <Input name="password" type="password" required />
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
