@@ -2,10 +2,11 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import bcrypt from "bcryptjs";
+import { getDatabaseUrl } from "../src/lib/database-url";
 import { DISTRICTS, STREET_NAMES, DEFAULT_ROOM_NAMES, ROOM_ORDER } from "../src/lib/chongqing/geo";
 import type { RoomType } from "../src/generated/prisma/client";
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const adapter = new PrismaPg({ connectionString: getDatabaseUrl() });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
