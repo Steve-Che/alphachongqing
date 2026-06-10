@@ -164,6 +164,44 @@ export async function getInviteCodes() {
   });
 }
 
+export async function getMapExplorerData() {
+  const districts = await prisma.district.findMany({
+    orderBy: { nameZh: "asc" },
+    include: {
+      streets: {
+        orderBy: { sortOrder: "asc" },
+        include: {
+          shopSlots: {
+            orderBy: { slotIndex: "asc" },
+            include: {
+              shop: { select: { slug: true, name: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return districts.map((d) => ({
+    slug: d.slug,
+    nameZh: d.nameZh,
+    summary: d.summary,
+    streets: d.streets.map((s) => ({
+      slug: s.slug,
+      nameZh: s.nameZh,
+      sortOrder: s.sortOrder,
+      districtSlug: d.slug,
+      slots: s.shopSlots.map((slot) => ({
+        id: slot.id,
+        slotIndex: slot.slotIndex,
+        status: slot.status,
+        isCenter: slot.isCenter,
+        shop: slot.shop,
+      })),
+    })),
+  }));
+}
+
 export async function getCityStats() {
   const [districts, residents, shops, posts] = await Promise.all([
     prisma.district.count(),
