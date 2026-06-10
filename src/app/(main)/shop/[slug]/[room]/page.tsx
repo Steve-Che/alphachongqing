@@ -87,7 +87,12 @@ export default async function ShopRoomPage({
             room.roomContents.map((rc) =>
               rc.post ? (
                 <article key={rc.id} className="prose-retro rounded border border-stone-200 bg-paper p-5">
-                  <h2 className="font-serif text-xl">{rc.post.title}</h2>
+                  <Link
+                    href={`/article/${rc.post.id}`}
+                    className="font-serif text-xl hover:text-accent"
+                  >
+                    {rc.post.title}
+                  </Link>
                   <time className="text-xs text-stone-400">
                     {formatDate(rc.post.createdAt)}
                   </time>

@@ -22,6 +22,7 @@ export async function getDistrictBySlug(slug: string) {
       streets: {
         orderBy: { sortOrder: "asc" },
         include: {
+          shopSlots: { select: { status: true, isCenter: true } },
           _count: {
             select: {
               shopSlots: true,
@@ -30,6 +31,48 @@ export async function getDistrictBySlug(slug: string) {
           },
         },
       },
+    },
+  });
+}
+
+export async function getUserResidence(userId: string) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      residenceType: true,
+      shop: {
+        select: {
+          slug: true,
+          name: true,
+          shopSlot: {
+            select: {
+              street: { select: { nameZh: true, slug: true } },
+            },
+          },
+        },
+      },
+      apartmentUnit: {
+        select: {
+          id: true,
+          unitNumber: true,
+          building: {
+            select: {
+              buildingNumber: true,
+              street: { select: { nameZh: true, slug: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+export async function getPostById(id: string) {
+  return prisma.post.findUnique({
+    where: { id },
+    include: {
+      author: true,
+      images: true,
     },
   });
 }

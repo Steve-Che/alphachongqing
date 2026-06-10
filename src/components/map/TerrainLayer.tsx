@@ -21,7 +21,13 @@ export function TerrainLayer() {
   }, []);
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} geometry={geometry}>
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -0.5, 0]}
+      geometry={geometry}
+      raycast={() => null}
+      renderOrder={0}
+    >
       <meshStandardMaterial color="#6b7c5e" roughness={0.9} />
     </mesh>
   );

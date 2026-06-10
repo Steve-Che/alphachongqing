@@ -1,14 +1,24 @@
+import Link from "next/link";
+import { auth } from "@/lib/auth";
 import { CityMapLoader } from "@/components/map/CityMapLoader";
 import { DistrictList } from "@/components/map/DistrictList";
+import { ResidenceBanner } from "@/components/residence/ResidenceBanner";
 import { getCityStats, getDistricts } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  const session = await auth();
   const [districts, stats] = await Promise.all([
     getDistricts(),
     getCityStats(),
   ]);
+
+  const districtMeta = districts.map((d) => ({
+    slug: d.slug,
+    nameZh: d.nameZh,
+    summary: d.summary,
+  }));
 
   return (
     <div className="space-y-8">
@@ -17,8 +27,8 @@ export default async function HomePage() {
           阿尔法重庆
         </h1>
         <p className="mt-2 max-w-2xl text-stone-600">
-          一座虚拟的山城。在三维地图上浏览六个核心区域，选一条街道开店或入住公寓，
-          写下长文与短文——这里没有短视频，只有文字与图片，像古早互联网那样。
+          一座虚拟的山城。在三维地图上点击区域，选街道开店或入住公寓，
+          写下长文与短文——像古早互联网那样。
         </p>
         <dl className="mt-4 flex flex-wrap gap-6 text-sm text-stone-500">
           <div>
@@ -40,12 +50,18 @@ export default async function HomePage() {
         </dl>
       </section>
 
+      {session?.user && (
+        <ResidenceBanner userId={session.user.id} />
+      )}
+
       <section>
-        <h2 className="mb-3 font-serif text-lg font-semibold">三维城市地图</h2>
-        <CityMapLoader />
-        <p className="mt-2 text-xs text-stone-400">
-          点击区域进入详情。移动端可点击下方列表浏览。
-        </p>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-serif text-lg font-semibold">三维城市地图</h2>
+          <Link href="/guide" className="text-sm text-accent hover:underline">
+            如何入驻？
+          </Link>
+        </div>
+        <CityMapLoader districts={districtMeta} />
       </section>
 
       <section>

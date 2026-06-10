@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getStreetBySlug } from "@/lib/queries";
+import { getStreetBySlug, getUserResidence } from "@/lib/queries";
 import { StreetView } from "@/components/map/StreetView";
-import { OpenShopForm } from "@/components/shop/OpenShopForm";
-import { RentApartmentButton } from "@/components/shop/RentApartmentButton";
+import { ShopSlotCard } from "@/components/shop/ShopSlotCard";
+import { ApartmentPicker } from "@/components/shop/ApartmentPicker";
+import { ResidenceBanner } from "@/components/residence/ResidenceBanner";
 import { StreetMessageForm } from "@/components/street/StreetMessageForm";
 import { formatDate } from "@/lib/utils";
 
@@ -22,10 +23,13 @@ export default async function StreetPage({
   ]);
   if (!street) notFound();
 
-  const vacantSlots = street.shopSlots.filter((s) => s.status === "VACANT" && !s.isCenter);
-  const firstVacantUnit = street.apartmentBuildings
-    .flatMap((b) => b.units)
-    .find((u) => !u.residentId);
+  const residence = session?.user?.id
+    ? await getUserResidence(session.user.id)
+    : null;
+  const canSettle = !!session?.user && !residence?.shop && !residence?.apartmentUnit;
+
+  const shopSlots = street.shopSlots.filter((s) => !s.isCenter);
+  const occupiedShops = shopSlots.filter((s) => s.status === "OCCUPIED").length;
 
   return (
     <div className="space-y-8">
@@ -39,72 +43,63 @@ export default async function StreetPage({
         <span className="text-stone-800">{street.nameZh}</span>
       </nav>
 
-      <header>
+      <header className="rounded-lg border border-stone-200 bg-paper p-5">
         <h1 className="font-serif text-3xl font-semibold">{street.nameZh}</h1>
         {street.summary && <p className="mt-2 text-stone-600">{street.summary}</p>}
+        <p className="mt-2 text-sm text-stone-500">
+          已开业 {occupiedShops}/{shopSlots.length} 家店铺 · {street.apartmentBuildings.length} 栋公寓楼
+        </p>
       </header>
 
-      <StreetView streetName={street.nameZh} slots={street.shopSlots} />
+      {session?.user && <ResidenceBanner userId={session.user.id} />}
+
+      <section>
+        <h2 className="mb-2 font-serif text-lg font-semibold">街景</h2>
+        <p className="mb-3 text-xs text-stone-500">金色为已开业，灰色为招租中</p>
+        <StreetView streetName={street.nameZh} slots={street.shopSlots} />
+      </section>
 
       <section>
         <h2 className="mb-4 font-serif text-lg font-semibold">街边店铺</h2>
+        {!session?.user && (
+          <p className="mb-4 text-sm text-stone-500">
+            <Link href="/login" className="text-accent hover:underline">登录</Link>
+            后可在此开店
+          </p>
+        )}
+        {session?.user && !canSettle && (
+          <p className="mb-4 text-sm text-amber-800">
+            你已有地盘。如需在本街开店，请先在
+            <Link href={`/u/${session.user.username}`} className="text-accent hover:underline">
+              我的主页
+            </Link>
+            释放当前店铺或公寓。
+          </p>
+        )}
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {street.shopSlots
-            .filter((s) => !s.isCenter)
-            .map((slot) => (
-              <li
-                key={slot.id}
-                className="rounded border border-stone-200 bg-paper p-3"
-              >
-                <span className="text-xs text-stone-400">
-                  {slot.slotIndex + 1} 号铺
-                </span>
-                {slot.shop ? (
-                  <div>
-                    <Link
-                      href={`/shop/${slot.shop.slug}`}
-                      className="mt-1 block font-medium text-stone-900 hover:text-accent"
-                    >
-                      {slot.shop.name}
-                    </Link>
-                    <p className="text-xs text-stone-500">
-                      店主：{slot.shop.owner.displayName ?? slot.shop.owner.username}
-                    </p>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="mt-1 text-sm text-stone-500">招租中</p>
-                    {session?.user && vacantSlots[0]?.id === slot.id && (
-                      <OpenShopForm shopSlotId={slot.id} />
-                    )}
-                  </div>
-                )}
-              </li>
-            ))}
+          {shopSlots.map((slot) => (
+            <ShopSlotCard
+              key={slot.id}
+              slot={slot}
+              canOpenShop={canSettle}
+            />
+          ))}
         </ul>
       </section>
 
       <section>
         <h2 className="mb-4 font-serif text-lg font-semibold">公寓楼</h2>
-        <p className="mb-3 text-sm text-stone-500">
-          共 {street.apartmentBuildings.length} 栋楼，选一间入住你的单间。
-        </p>
-        {session?.user && firstVacantUnit && (
-          <div className="rounded border border-dashed border-accent bg-paper p-4">
-            <p className="text-sm text-stone-600">
-              {firstVacantUnit.buildingId
-                ? `可入住：${street.apartmentBuildings.find((b) => b.id === firstVacantUnit.buildingId)?.buildingNumber} 号楼 ${firstVacantUnit.unitNumber} 室`
-                : "有空位可入住"}
-            </p>
-            <RentApartmentButton unitId={firstVacantUnit.id} />
-          </div>
-        )}
+        <ApartmentPicker
+          buildings={street.apartmentBuildings}
+          canRent={canSettle}
+          username={session?.user?.username}
+        />
         <details className="mt-4">
           <summary className="cursor-pointer text-sm text-stone-600">
-            查看各楼入住情况
+            各楼入住概况
           </summary>
           <ul className="mt-2 grid gap-2 text-sm sm:grid-cols-3">
-            {street.apartmentBuildings.slice(0, 12).map((b) => {
+            {street.apartmentBuildings.map((b) => {
               const occupied = b.units.filter((u) => u.residentId).length;
               return (
                 <li key={b.id} className="text-stone-500">
@@ -132,7 +127,7 @@ export default async function StreetPage({
             </li>
           ))}
           {street.streetMessages.length === 0 && (
-            <p className="text-stone-500">街上还很安静。</p>
+            <p className="text-stone-500">街上还很安静，来留第一条言吧。</p>
           )}
         </ul>
       </section>

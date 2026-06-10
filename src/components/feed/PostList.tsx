@@ -24,9 +24,12 @@ export function PostList({ posts }: { posts: Post[] }) {
             key={post.id}
             className="rounded border border-stone-200 bg-paper p-5"
           >
-            <h3 className="font-serif text-xl font-semibold">
+            <Link
+              href={`/article/${post.id}`}
+              className="font-serif text-xl font-semibold hover:text-accent"
+            >
               {post.title}
-            </h3>
+            </Link>
             <time className="mt-1 block text-xs text-stone-400">
               {formatDate(post.createdAt)}
             </time>

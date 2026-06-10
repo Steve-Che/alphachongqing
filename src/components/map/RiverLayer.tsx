@@ -26,7 +26,7 @@ function River({ points, color }: { points: { x: number; z: number }[]; color: s
   shape.closePath();
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.2, 0]}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.12, 0]} raycast={() => null}>
       <shapeGeometry args={[shape]} />
       <meshStandardMaterial
         color={color}

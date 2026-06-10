@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getShopBySlug } from "@/lib/queries";
-import { RoomNav } from "@/components/shop/RoomNav";
+import { RoomFloorPlan } from "@/components/shop/RoomFloorPlan";
 import { GuestbookForm } from "@/components/shop/GuestbookForm";
 import { formatDate } from "@/lib/utils";
+import { roomTypeToSlug } from "@/lib/rooms";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +29,10 @@ export default async function ShopPage({
   const isOwner = session?.user?.id === shop.ownerId;
   const street = shop.shopSlot.street;
   const district = street.district;
+  const frontRoom = shop.rooms.find((r) => r.roomType === "FRONT_HALL");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <nav className="text-sm text-stone-500">
         <Link href="/" className="hover:text-stone-800">城市地图</Link>
         <span className="mx-2">/</span>
@@ -45,7 +47,8 @@ export default async function ShopPage({
         <span className="text-stone-800">{shop.name}</span>
       </nav>
 
-      <header className="rounded border border-stone-200 bg-paper p-6">
+      <header className="rounded-lg border border-stone-200 bg-paper p-6">
+        <p className="text-xs text-stone-400">店铺 · {street.nameZh}</p>
         <h1 className="font-serif text-3xl font-semibold">{shop.name}</h1>
         {shop.tagline && <p className="mt-2 text-stone-600">{shop.tagline}</p>}
         <p className="mt-3 text-sm text-stone-500">
@@ -54,43 +57,61 @@ export default async function ShopPage({
             {shop.owner.displayName ?? shop.owner.username}
           </Link>
         </p>
+        {isOwner && (
+          <div className="mt-4 flex flex-wrap gap-3 text-sm">
+            <Link href="/write/article" className="text-accent hover:underline">
+              写长文并挂载到房间
+            </Link>
+          </div>
+        )}
       </header>
 
-      <RoomNav shopSlug={shop.slug} rooms={shop.rooms} />
-
       <section>
-        <h2 className="mb-3 font-serif text-lg font-semibold">前厅预览</h2>
-        {shop.rooms
-          .filter((r) => r.roomType === "FRONT_HALL")
-          .map((room) => (
-            <div key={room.id}>
-              {room.roomContents.length > 0 ? (
-                room.roomContents.map((rc) =>
-                  rc.post ? (
-                    <article key={rc.id} className="prose-retro rounded bg-paper p-4">
-                      <h3 className="font-serif text-xl">{rc.post.title}</h3>
-                      <div dangerouslySetInnerHTML={{ __html: rc.post.body }} />
-                    </article>
-                  ) : rc.text ? (
-                    <p key={rc.id} className="text-stone-700">{rc.text}</p>
-                  ) : null,
-                )
-              ) : (
-                <p className="text-stone-500">店主还没有布置前厅。</p>
-              )}
-              <Link
-                href={`/shop/${shop.slug}/front-hall`}
-                className="mt-2 inline-block text-sm text-accent hover:underline"
-              >
-                进入前厅 →
-              </Link>
-            </div>
-          ))}
+        <h2 className="mb-3 font-serif text-lg font-semibold">店铺平面图</h2>
+        <p className="mb-3 text-sm text-stone-500">点击房间进入。六间房致敬阿尔法城小店结构。</p>
+        <RoomFloorPlan shopSlug={shop.slug} rooms={shop.rooms} />
       </section>
+
+      {frontRoom && (
+        <section>
+          <h2 className="mb-3 font-serif text-lg font-semibold">前厅</h2>
+          {frontRoom.roomContents.length > 0 ? (
+            frontRoom.roomContents.map((rc) =>
+              rc.post ? (
+                <article key={rc.id} className="rounded-lg border border-stone-200 bg-paper p-5">
+                  <Link
+                    href={`/article/${rc.post.id}`}
+                    className="font-serif text-xl font-semibold hover:text-accent"
+                  >
+                    {rc.post.title}
+                  </Link>
+                  <p className="mt-2 line-clamp-3 text-sm text-stone-600">
+                    {rc.post.body.replace(/<[^>]+>/g, "").slice(0, 120)}…
+                  </p>
+                </article>
+              ) : null,
+            )
+          ) : (
+            <p className="text-stone-500">前厅还没有内容。</p>
+          )}
+          <Link
+            href={`/shop/${shop.slug}/${roomTypeToSlug("FRONT_HALL")}`}
+            className="mt-2 inline-block text-sm text-accent hover:underline"
+          >
+            进入前厅 →
+          </Link>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-3 font-serif text-lg font-semibold">留言板</h2>
-        {session?.user && <GuestbookForm shopId={shop.id} />}
+        {session?.user ? (
+          <GuestbookForm shopId={shop.id} />
+        ) : (
+          <p className="text-sm text-stone-500">
+            <Link href="/login" className="text-accent hover:underline">登录</Link> 后留言
+          </p>
+        )}
         <ul className="mt-4 space-y-2">
           {guestbook.map((entry) => (
             <li key={entry.id} className="rounded border-l-2 border-stone-300 bg-paper px-4 py-2">
@@ -101,20 +122,10 @@ export default async function ShopPage({
             </li>
           ))}
           {guestbook.length === 0 && (
-            <p className="text-stone-500">还没有留言。</p>
+            <p className="text-stone-500">还没有留言，来做第一个吧。</p>
           )}
         </ul>
       </section>
-
-      {isOwner && (
-        <p className="text-sm text-stone-500">
-          你是店主，可进入各房间布置内容，或{" "}
-          <Link href="/write/article" className="text-accent underline">
-            写长文
-          </Link>{" "}
-          挂载到房间。
-        </p>
-      )}
     </div>
   );
 }
