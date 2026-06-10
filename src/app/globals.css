@@ -1,26 +1,71 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f4ef;
+  --foreground: #2c2825;
+  --paper: #fffef9;
+  --accent: #8b7355;
+  --border: #e0d8cc;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-paper: var(--paper);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --font-sans: var(--font-noto-sans);
+  --font-serif: var(--font-noto-serif);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-noto-sans), system-ui, sans-serif;
+}
+
+.prose-retro {
+  max-width: 42rem;
+  line-height: 1.8;
+}
+
+.prose-retro h1,
+.prose-retro h2,
+.prose-retro h3 {
+  font-family: var(--font-noto-serif), serif;
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose-retro p {
+  margin-bottom: 1em;
+}
+
+.prose-retro img {
+  max-width: 100%;
+  border-radius: 4px;
+  margin: 1em 0;
+}
+
+.prose-retro a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.moment-card {
+  border-left: 3px solid var(--accent);
+  background: var(--paper);
+}
+
+.tiptap:focus {
+  outline: none;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  color: #a8a29e;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }

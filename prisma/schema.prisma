@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ResidenceType {
+  SHOP
+  APARTMENT
+}
+
+enum ShopSlotStatus {
+  VACANT
+  OCCUPIED
+}
+
+enum RoomType {
+  FRONT_HALL
+  LEFT_WING
+  RIGHT_WING
+  MAIN_HALL
+  BACK_GARDEN
+  SIDE_ROOM
+}
+
+enum PostType {
+  ARTICLE
+  MOMENT
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  username       String         @unique
+  passwordHash   String
+  displayName    String?
+  bio            String?
+  avatarUrl      String?
+  role           UserRole       @default(USER)
+  residenceType  ResidenceType?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  shop           Shop?
+  apartmentUnit  ApartmentUnit?
+  posts          Post[]
+  inviteCodes    InviteCode[]
+  imageAssets    ImageAsset[]
+  guestbookEntries GuestbookEntry[]
+  streetMessages StreetMessage[]
+
+  @@index([username])
+}
+
+model InviteCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  maxUses     Int       @default(1)
+  usedCount   Int       @default(0)
+  expiresAt   DateTime?
+  revoked     Boolean   @default(false)
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([code])
+}
+
+model District {
+  id               String   @id @default(cuid())
+  slug             String   @unique
+  nameZh           String
+  summary          String?
+  mapX             Float
+  mapZ             Float
+  elevation        Float    @default(0)
+  color            String   @default("#8B7355")
+  boundaryPolygon  Json
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  streets Street[]
+
+  @@index([slug])
+}
+
+model Street {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  nameZh     String
+  summary    String?
+  districtId String
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  district           District            @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  shopSlots          ShopSlot[]
+  apartmentBuildings ApartmentBuilding[]
+  streetMessages     StreetMessage[]
+
+  @@index([districtId])
+  @@index([slug])
+}
+
+model ShopSlot {
+  id        String         @id @default(cuid())
+  streetId  String
+  slotIndex Int
+  isCenter  Boolean        @default(false)
+  status    ShopSlotStatus @default(VACANT)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  street Street @relation(fields: [streetId], references: [id], onDelete: Cascade)
+  shop   Shop?
+
+  @@unique([streetId, slotIndex])
+  @@index([streetId, status])
+}
+
+model Shop {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  tagline     String?
+  shopSlotId  String   @unique
+  ownerId     String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  shopSlot ShopSlot   @relation(fields: [shopSlotId], references: [id])
+  owner    User       @relation(fields: [ownerId], references: [id])
+  rooms    ShopRoom[]
+
+  @@index([slug])
+}
+
+model ShopRoom {
+  id          String   @id @default(cuid())
+  shopId      String
+  roomType    RoomType
+  displayName String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  roomContents RoomContent[]
+
+  @@unique([shopId, roomType])
+  @@index([shopId])
+}
+
+model RoomContent {
+  id        String   @id @default(cuid())
+  shopRoomId String
+  postId    String?
+  text      String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shopRoom ShopRoom @relation(fields: [shopRoomId], references: [id], onDelete: Cascade)
+  post     Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  @@index([shopRoomId])
+}
+
+model ApartmentBuilding {
+  id             String   @id @default(cuid())
+  streetId       String
+  buildingNumber Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  street Street          @relation(fields: [streetId], references: [id], onDelete: Cascade)
+  units  ApartmentUnit[]
+
+  @@unique([streetId, buildingNumber])
+  @@index([streetId])
+}
+
+model ApartmentUnit {
+  id         String   @id @default(cuid())
+  buildingId String
+  unitNumber Int
+  residentId String?  @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  building ApartmentBuilding @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  resident User?             @relation(fields: [residentId], references: [id])
+
+  @@unique([buildingId, unitNumber])
+  @@index([buildingId])
+}
+
+model Post {
+  id         String   @id @default(cuid())
+  type       PostType
+  title      String?
+  body       String
+  coverUrl   String?
+  authorId   String
+  streetId   String?
+  published  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  images       ImageAsset[]
+  roomContents RoomContent[]
+
+  @@index([authorId, type])
+  @@index([createdAt])
+}
+
+model ImageAsset {
+  id        String   @id @default(cuid())
+  url       String
+  userId    String
+  postId    String?
+  createdAt DateTime @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+}
+
+model GuestbookEntry {
+  id        String   @id @default(cuid())
+  shopId    String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+}
+
+model StreetMessage {
+  id        String   @id @default(cuid())
+  streetId  String
+  authorId  String
+  content   String
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  street Street @relation(fields: [streetId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([streetId, createdAt])
+}
