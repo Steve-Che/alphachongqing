@@ -5,6 +5,8 @@ import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import type { DistrictGeo } from "@/lib/chongqing/geo";
 
+const PLATE_Y = 0.2;
+
 type DistrictMeshProps = {
   district: DistrictGeo;
   hovered?: boolean;
@@ -30,14 +32,13 @@ export function DistrictMesh({
 }: DistrictMeshProps) {
   const shape = useMemo(() => buildShape(district.boundary), [district.boundary]);
   const active = hovered || highlighted;
-  const y = district.elevation + 0.15;
   const opacity = dimmed ? 0.35 : active ? 0.92 : 0.78;
 
   return (
     <group>
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, y, 0]}
+        position={[0, PLATE_Y, 0]}
         renderOrder={2}
         raycast={() => null}
       >
@@ -49,29 +50,13 @@ export function DistrictMesh({
           emissive={district.color}
           emissiveIntensity={active ? 0.3 : dimmed ? 0 : 0.08}
           side={THREE.DoubleSide}
-          depthWrite={false}
-        />
-      </mesh>
-
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0, 0]}
-        raycast={() => null}
-        renderOrder={1}
-      >
-        <extrudeGeometry
-          args={[shape, { depth: district.elevation, bevelEnabled: false }]}
-        />
-        <meshStandardMaterial
-          color={district.color}
-          transparent
-          opacity={dimmed ? 0.25 : 0.55}
+          depthWrite
         />
       </mesh>
 
       {!dimmed && (
         <Html
-          position={[district.center.x, y + 1.5, district.center.z]}
+          position={[district.center.x, PLATE_Y + 1.2, district.center.z]}
           center
           distanceFactor={45}
           style={{ pointerEvents: "none" }}

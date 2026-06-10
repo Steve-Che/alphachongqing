@@ -46,6 +46,7 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
   const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
   const [hoveredStreet, setHoveredStreet] = useState<string | null>(null);
   const [hoveredSlotId, setHoveredSlotId] = useState<string | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
 
   const streetMarkers: StreetMarkerData[] = useMemo(
     () =>
@@ -87,8 +88,11 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
   const streetData = districts
     .flatMap((d) => d.streets)
     .find((s) => s.slug === activeStreetSlug);
+  const selectedSlot =
+    streetData?.slots.find((s) => s.id === selectedSlotId) ?? null;
   const hoveredSlot =
     streetData?.slots.find((s) => s.id === hoveredSlotId) ?? null;
+  const activeSlot = selectedSlot ?? hoveredSlot;
 
   const focusCenter = useMemo(() => {
     if (!districtSlug) return null;
@@ -111,12 +115,14 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
     setStreetSlug(null);
     setHoveredStreet(null);
     setHoveredSlotId(null);
+    setSelectedSlotId(null);
     setLevel("district");
   };
 
   const enterStreet = (slug: string) => {
     setStreetSlug(slug);
     setHoveredSlotId(null);
+    setSelectedSlotId(null);
     setLevel("street");
   };
 
@@ -127,6 +133,7 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
     setHoveredDistrict(null);
     setHoveredStreet(null);
     setHoveredSlotId(null);
+    setSelectedSlotId(null);
   };
 
   const backToDistrict = () => {
@@ -134,6 +141,7 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
     setStreetSlug(null);
     setHoveredStreet(null);
     setHoveredSlotId(null);
+    setSelectedSlotId(null);
   };
 
   const hint =
@@ -141,7 +149,7 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
       ? "固定视角 · 滚轮缩放 · 点击区域进入城区"
       : level === "district"
         ? "滚轮缩放 · 点击街道块下钻到街景"
-        : "滚轮缩放至铺面 · 悬停/点击店铺查看详情";
+        : "点击铺面选中 · 底部面板可点「申请开店」· 点地面取消选择";
 
   return (
     <div className="relative">
@@ -186,7 +194,9 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
                   streetName={streetData.nameZh}
                   streetSlug={streetData.slug}
                   slots={streetData.slots}
+                  selectedSlotId={selectedSlotId}
                   onSlotHover={setHoveredSlotId}
+                  onSlotSelect={setSelectedSlotId}
                 />
               </group>
             )}
@@ -290,10 +300,15 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
             </div>
           )}
 
-          {level === "street" && streetData && (
+          {level === "street" && streetData && activeSlot && (
             <StreetSlotPanel
-              slot={hoveredSlot ?? streetData.slots.find((s) => s.shop) ?? null}
+              slot={activeSlot}
               streetSlug={streetData.slug}
+              pinned={!!selectedSlot}
+              onClear={() => {
+                setSelectedSlotId(null);
+                setHoveredSlotId(null);
+              }}
             />
           )}
         </div>
