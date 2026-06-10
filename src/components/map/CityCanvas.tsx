@@ -18,6 +18,7 @@ import {
   StreetSlotPanel,
   type StreetSlotData,
 } from "./StreetScene3D";
+import { MapCanvasSetup } from "./MapCanvasSetup";
 
 export type MapStreetData = {
   slug: string;
@@ -151,6 +152,7 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
           style={{ touchAction: "none" }}
         >
           <Suspense fallback={null}>
+            <MapCanvasSetup />
             <Sky sunPosition={[100, 20, 100]} />
             <ambientLight intensity={0.55} />
             <directionalLight position={[30, 50, 20]} intensity={1.1} />

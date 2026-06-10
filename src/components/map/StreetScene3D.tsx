@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Html } from "@react-three/drei";
 import { type ThreeEvent } from "@react-three/fiber";
+import { encodeRouteSlug } from "@/lib/route-slug";
 
 export type StreetSlotData = {
   id: string;
@@ -59,8 +60,11 @@ function ShopBuilding({
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     onHover(slot.id);
-    if (slot.shop) router.push(`/shop/${slot.shop.slug}`);
-    else router.push(`/street/${streetSlug}`);
+    if (slot.shop?.slug) {
+      router.push(`/shop/${encodeRouteSlug(slot.shop.slug)}`);
+      return;
+    }
+    // 空铺/街心：留在街景层展示浮层，避免未编码中文 slug 导致 404
   };
 
   const label = slot.isCenter
@@ -191,7 +195,7 @@ export function StreetSlotPanel({
             街坊聚集地
           </h3>
           <Link
-            href={`/street/${streetSlug}`}
+            href={`/street/${encodeRouteSlug(streetSlug)}`}
             className="mt-3 inline-block rounded bg-stone-800 px-4 py-2 text-sm text-white hover:bg-stone-700"
           >
             查看街道 →
@@ -204,7 +208,7 @@ export function StreetSlotPanel({
             铺位 #{slot.slotIndex + 1}
           </h3>
           <Link
-            href={`/street/${streetSlug}`}
+            href={`/street/${encodeRouteSlug(streetSlug)}`}
             className="mt-3 inline-block rounded bg-stone-800 px-4 py-2 text-sm text-white hover:bg-stone-700"
           >
             申请开店 →

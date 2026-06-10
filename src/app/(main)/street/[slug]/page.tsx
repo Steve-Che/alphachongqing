@@ -8,6 +8,7 @@ import { ApartmentPicker } from "@/components/shop/ApartmentPicker";
 import { ResidenceBanner } from "@/components/residence/ResidenceBanner";
 import { StreetMessageForm } from "@/components/street/StreetMessageForm";
 import { formatDate } from "@/lib/utils";
+import { decodeRouteSlug } from "@/lib/route-slug";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,8 @@ export default async function StreetPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeRouteSlug(rawSlug);
   const [street, session] = await Promise.all([
     getStreetBySlug(slug),
     auth(),

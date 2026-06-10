@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { encodeRouteSlug } from "@/lib/route-slug";
 
 type Street = {
   id: string;
@@ -34,7 +35,7 @@ export function DistrictList({ districts }: { districts: District[] }) {
             {d.streets.slice(0, 4).map((s) => (
               <li key={s.id}>
                 <Link
-                  href={`/street/${s.slug}`}
+                  href={`/street/${encodeRouteSlug(s.slug)}`}
                   className="text-stone-600 hover:text-stone-900"
                 >
                   {s.nameZh}

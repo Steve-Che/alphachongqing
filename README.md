@@ -96,6 +96,19 @@ npx vercel --prod
 - 街道留言、店铺留言板
 - 管理员邀请码后台 `/admin/invites`
 
+## 常见问题
+
+### 控制台出现 `page-events.js` / `handleKeyDown` 报错
+
+这通常来自浏览器扩展 **Bardeen**（或其他自动化类扩展）注入的 `page-events.js`，并非本站代码。扩展在 `keydown` 时读取 `event.key.length`，遇到 `event.key` 为空会抛错。
+
+**处理方式（任选其一）：**
+
+1. 在 Chrome 扩展管理里，将 Bardeen 设为「点击时启用」，或对本站 `alphachongqing.vercel.app` 关闭站点访问权限
+2. 忽略该控制台报错（不影响地图与开店功能）
+
+本站已对 3D 画布做了焦点隔离，可降低触发概率。
+
 ## 项目结构
 
 ```
