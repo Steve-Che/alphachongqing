@@ -9,8 +9,9 @@ import { RoomNav } from "@/components/shop/RoomNav";
 import { GuestbookForm } from "@/components/shop/GuestbookForm";
 import { AttachPostForm } from "@/components/shop/AttachPostForm";
 import { formatDate } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function ShopRoomPage({
   params,
@@ -98,7 +99,7 @@ export default async function ShopRoomPage({
                   </time>
                   <div
                     className="mt-3"
-                    dangerouslySetInnerHTML={{ __html: rc.post.body }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(rc.post.body) }}
                   />
                 </article>
               ) : rc.text ? (

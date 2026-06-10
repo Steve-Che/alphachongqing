@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
+import { isPublicPath } from "@/lib/auth-paths";
 
 export const authConfig: NextAuthConfig = {
   trustHost: true,
@@ -10,18 +11,8 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     authorized({ auth, request }) {
       const { pathname } = request.nextUrl;
-      const publicPaths = [
-        "/login",
-        "/register",
-        "/forgot-password",
-        "/reset-password",
-        "/api/auth",
-      ];
-      const isPublic = publicPaths.some(
-        (p) => pathname === p || pathname.startsWith(`${p}/`),
-      );
 
-      if (!auth && !isPublic) return false;
+      if (!auth && !isPublicPath(pathname)) return false;
 
       if (pathname.startsWith("/admin") && auth?.user?.role !== "ADMIN") {
         return Response.redirect(new URL("/", request.nextUrl));

@@ -2,11 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getUserByUsername } from "@/lib/queries";
 import { PostList } from "@/components/feed/PostList";
-import { releaseResidenceAction } from "@/app/actions/shop";
 import { auth } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
+import { ReleaseResidenceButton } from "@/components/residence/ReleaseResidenceButton";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function UserPage({
   params,
@@ -51,11 +50,7 @@ export default async function UserPage({
         </div>
 
         {isSelf && (user.shop || user.apartmentUnit) && (
-          <form action={releaseResidenceAction} className="mt-4">
-            <Button type="submit" variant="outline" size="sm">
-              释放当前地盘（店铺或公寓）
-            </Button>
-          </form>
+          <ReleaseResidenceButton />
         )}
       </header>
 

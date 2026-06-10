@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/db";
 
 export async function getDistricts() {
@@ -35,7 +36,7 @@ export async function getDistrictBySlug(slug: string) {
   });
 }
 
-export async function getUserResidence(userId: string) {
+export const getUserResidence = cache(async (userId: string) => {
   return prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -65,7 +66,7 @@ export async function getUserResidence(userId: string) {
       },
     },
   });
-}
+});
 
 export async function getPostById(id: string) {
   return prisma.post.findUnique({
@@ -210,4 +211,59 @@ export async function getCityStats() {
     prisma.post.count(),
   ]);
   return { districts, residents, shops, posts };
+}
+
+/** 首页单次 district 大查询，同时产出地图、列表与统计 */
+export async function getHomePageData() {
+  const [districts, residents, shops, posts] = await Promise.all([
+    prisma.district.findMany({
+      orderBy: { nameZh: "asc" },
+      include: {
+        streets: {
+          orderBy: { sortOrder: "asc" },
+          include: {
+            _count: { select: { shopSlots: true } },
+            shopSlots: {
+              orderBy: { slotIndex: "asc" },
+              include: {
+                shop: { select: { slug: true, name: true } },
+              },
+            },
+          },
+        },
+        _count: { select: { streets: true } },
+      },
+    }),
+    prisma.user.count(),
+    prisma.shop.count(),
+    prisma.post.count(),
+  ]);
+
+  const stats = {
+    districts: districts.length,
+    residents,
+    shops,
+    posts,
+  };
+
+  const mapData = districts.map((d) => ({
+    slug: d.slug,
+    nameZh: d.nameZh,
+    summary: d.summary,
+    streets: d.streets.map((s) => ({
+      slug: s.slug,
+      nameZh: s.nameZh,
+      sortOrder: s.sortOrder,
+      districtSlug: d.slug,
+      slots: s.shopSlots.map((slot) => ({
+        id: slot.id,
+        slotIndex: slot.slotIndex,
+        status: slot.status,
+        isCenter: slot.isCenter,
+        shop: slot.shop,
+      })),
+    })),
+  }));
+
+  return { districtList: districts, mapData, stats };
 }

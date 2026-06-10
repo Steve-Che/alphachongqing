@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { getApartmentUnit } from "@/lib/queries";
 import { PostList } from "@/components/feed/PostList";
 import { prisma } from "@/lib/db";
+import { encodeRouteSlug } from "@/lib/route-slug";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function ApartmentPage({
   params,
@@ -34,7 +35,7 @@ export default async function ApartmentPage({
           {district.nameZh}
         </Link>
         <span className="mx-2">/</span>
-        <Link href={`/street/${street.slug}`} className="hover:text-stone-800">
+        <Link href={`/street/${encodeRouteSlug(street.slug)}`} className="hover:text-stone-800">
           {street.nameZh}
         </Link>
         <span className="mx-2">/</span>

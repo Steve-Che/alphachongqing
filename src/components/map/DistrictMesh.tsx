@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import type { DistrictGeo } from "@/lib/chongqing/geo";
 
@@ -53,26 +52,6 @@ export function DistrictMesh({
           depthWrite
         />
       </mesh>
-
-      {!dimmed && (
-        <Html
-          position={[district.center.x, PLATE_Y + 1.2, district.center.z]}
-          center
-          distanceFactor={45}
-          style={{ pointerEvents: "none" }}
-          zIndexRange={[100, 0]}
-        >
-          <div
-            className={`whitespace-nowrap rounded px-2.5 py-1 text-xs font-medium shadow-sm transition-all ${
-              active
-                ? "scale-105 bg-stone-900 text-white"
-                : "bg-black/75 text-white"
-            }`}
-          >
-            {district.nameZh}
-          </div>
-        </Html>
-      )}
     </group>
   );
 }

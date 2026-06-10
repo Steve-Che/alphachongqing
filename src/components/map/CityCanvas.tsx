@@ -19,6 +19,7 @@ import {
   type StreetSlotData,
 } from "./StreetScene3D";
 import { MapCanvasSetup } from "./MapCanvasSetup";
+import { encodeRouteSlug } from "@/lib/route-slug";
 
 export type MapStreetData = {
   slug: string;
@@ -191,8 +192,6 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
             {level === "street" && streetData && focusStreet && (
               <group position={[focusStreet.x, 0, focusStreet.z]}>
                 <StreetScene3D
-                  streetName={streetData.nameZh}
-                  streetSlug={streetData.slug}
                   slots={streetData.slots}
                   selectedSlotId={selectedSlotId}
                   onSlotHover={setHoveredSlotId}
@@ -297,6 +296,24 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
               >
                 下钻到{streetData.nameZh} →
               </button>
+            </div>
+          )}
+
+          {level === "street" && streetData && !activeSlot && (
+            <div className="pointer-events-auto max-w-sm rounded-lg border border-stone-200 bg-paper/95 p-4 shadow-md backdrop-blur-sm">
+              <p className="text-xs text-stone-400">街景</p>
+              <h3 className="font-serif text-lg font-semibold text-stone-900">
+                {streetData.nameZh}
+              </h3>
+              <p className="mt-1 text-sm text-stone-600">
+                点击铺面选中，底部面板可进入店铺或申请开店
+              </p>
+              <Link
+                href={`/street/${encodeRouteSlug(streetData.slug)}`}
+                className="mt-3 inline-block rounded border border-stone-300 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
+              >
+                打开街道页面
+              </Link>
             </div>
           )}
 

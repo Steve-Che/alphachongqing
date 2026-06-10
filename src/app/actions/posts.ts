@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 export type ActionResult<T = void> =
   | { ok: true; data?: T }
@@ -26,7 +27,7 @@ export async function createArticle(data: {
   if (!user) return { ok: false, error: "请先登录" };
 
   const title = data.title.trim();
-  const body = data.body.trim();
+  const body = sanitizeHtml(data.body.trim());
   if (!title || !body) return { ok: false, error: "标题和正文不能为空" };
 
   const post = await prisma.post.create({
@@ -72,7 +73,13 @@ export async function createMoment(data: {
   });
 
   revalidatePath(`/u/${user.username}`);
-  if (data.streetId) revalidatePath(`/street`);
+  if (data.streetId) {
+    const street = await prisma.street.findUnique({
+      where: { id: data.streetId },
+      select: { slug: true },
+    });
+    if (street) revalidatePath(`/street/${street.slug}`);
+  }
   return { ok: true, data: { id: post.id } };
 }
 

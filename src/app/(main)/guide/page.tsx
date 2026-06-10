@@ -10,7 +10,9 @@ export default async function GuidePage() {
       <header>
         <h1 className="font-serif text-3xl font-semibold">入驻指南</h1>
         <p className="mt-2 text-stone-600">
-          阿尔法重庆致敬豆瓣阿尔法城：选区、选街、开店或入住，用文字和图片经营你的角落。
+          阿尔法重庆致敬豆瓣阿尔法城：任何人可浏览地图与店铺；入驻、写作需
+          <Link href="/register" className="text-accent hover:underline">邀请码注册</Link>
+          后登录。
         </p>
       </header>
 
@@ -20,7 +22,7 @@ export default async function GuidePage() {
         <h2 className="font-serif text-xl font-semibold">第一步：浏览城市</h2>
         <p className="text-stone-600">
           在<Link href="/" className="text-accent hover:underline">首页三维地图</Link>
-          上点击六个彩色区域（渝中、江北、南岸等），或从下方列表进入。地图可拖动旋转、滚轮缩放。
+          上点击六个彩色区域（渝中、江北、南岸等），或从下方列表进入。固定视角、滚轮缩放，可下钻到街道与铺面。
         </p>
       </section>
 

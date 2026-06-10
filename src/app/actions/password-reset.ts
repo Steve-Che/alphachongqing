@@ -8,6 +8,7 @@ import {
   getResetPasswordUrl,
   hashResetToken,
 } from "@/lib/password-reset";
+import { rateLimitAuthAction } from "@/lib/rate-limit";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -17,6 +18,9 @@ const GENERIC_SENT_MESSAGE =
 export async function requestPasswordReset(
   formData: FormData,
 ): Promise<ActionResult> {
+  const limited = await rateLimitAuthAction("password-reset");
+  if (!limited.ok) return limited;
+
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   if (!email) {
     return { ok: false, error: "请填写注册邮箱" };

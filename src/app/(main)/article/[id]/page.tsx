@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPostById } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function ArticlePage({
   params,
@@ -46,7 +47,7 @@ export default async function ArticlePage({
 
       <div
         className="prose-retro mt-8 text-stone-800"
-        dangerouslySetInnerHTML={{ __html: post.body }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.body) }}
       />
     </article>
   );

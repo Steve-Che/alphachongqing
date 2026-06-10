@@ -7,8 +7,9 @@ import { RoomFloorPlan } from "@/components/shop/RoomFloorPlan";
 import { GuestbookForm } from "@/components/shop/GuestbookForm";
 import { formatDate } from "@/lib/utils";
 import { roomTypeToSlug } from "@/lib/rooms";
+import { encodeRouteSlug } from "@/lib/route-slug";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function ShopPage({
   params,
@@ -40,7 +41,7 @@ export default async function ShopPage({
           {district.nameZh}
         </Link>
         <span className="mx-2">/</span>
-        <Link href={`/street/${street.slug}`} className="hover:text-stone-800">
+        <Link href={`/street/${encodeRouteSlug(street.slug)}`} className="hover:text-stone-800">
           {street.nameZh}
         </Link>
         <span className="mx-2">/</span>

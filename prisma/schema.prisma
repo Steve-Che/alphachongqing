@@ -154,9 +154,10 @@ model Shop {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  shopSlot ShopSlot   @relation(fields: [shopSlotId], references: [id])
-  owner    User       @relation(fields: [ownerId], references: [id])
-  rooms    ShopRoom[]
+  shopSlot         ShopSlot         @relation(fields: [shopSlotId], references: [id])
+  owner            User             @relation(fields: [ownerId], references: [id])
+  rooms            ShopRoom[]
+  guestbookEntries GuestbookEntry[]
 
   @@index([slug])
 }
@@ -263,6 +264,7 @@ model GuestbookEntry {
   createdAt DateTime @default(now())
 
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  shop   Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@index([shopId])
 }

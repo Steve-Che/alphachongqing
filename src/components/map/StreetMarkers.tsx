@@ -1,6 +1,5 @@
 "use client";
 
-import { Html } from "@react-three/drei";
 import { getStreetWorldPosition } from "@/lib/chongqing/pick";
 
 export type StreetMarkerData = {
@@ -30,7 +29,6 @@ export function StreetMarkers({
       {scoped.map((street) => {
         const pos = getStreetWorldPosition(districtSlug, street.sortOrder);
         const active = hoveredSlug === street.slug;
-        const total = street.occupiedCount + street.vacantCount;
 
         return (
           <group key={street.slug} position={[pos.x, 2.5, pos.z]}>
@@ -46,20 +44,6 @@ export function StreetMarkers({
               <planeGeometry args={[5, 2.8]} />
               <meshStandardMaterial color="#8a9a7a" transparent opacity={0.6} />
             </mesh>
-            <Html center distanceFactor={28} style={{ pointerEvents: "none" }}>
-              <div
-                className={`max-w-[120px] rounded px-2 py-1 text-center text-[10px] font-medium shadow-sm transition-all ${
-                  active
-                    ? "scale-105 bg-stone-900 text-white"
-                    : "bg-black/75 text-white"
-                }`}
-              >
-                <div>{street.nameZh}</div>
-                <div className="mt-0.5 opacity-80">
-                  {street.occupiedCount}/{total} 铺
-                </div>
-              </div>
-            </Html>
           </group>
         );
       })}

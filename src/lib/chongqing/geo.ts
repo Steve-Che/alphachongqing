@@ -1,3 +1,7 @@
+/**
+ * 3D 城市渲染的地理真源：区划边界、街道坐标、颜色等均由此文件定义。
+ * 数据库 `District.boundaryPolygon` 仅用于种子同步，运行时以本文件为准。
+ */
 export type GeoPoint = { x: number; z: number };
 
 export type DistrictGeo = {

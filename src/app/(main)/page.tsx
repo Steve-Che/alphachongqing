@@ -3,17 +3,13 @@ import { auth } from "@/lib/auth";
 import { CityMapLoader } from "@/components/map/CityMapLoader";
 import { DistrictList } from "@/components/map/DistrictList";
 import { ResidenceBanner } from "@/components/residence/ResidenceBanner";
-import { getCityStats, getDistricts, getMapExplorerData } from "@/lib/queries";
+import { getHomePageData } from "@/lib/queries";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function HomePage() {
   const session = await auth();
-  const [districts, stats, mapData] = await Promise.all([
-    getDistricts(),
-    getCityStats(),
-    getMapExplorerData(),
-  ]);
+  const { districtList, mapData, stats } = await getHomePageData();
 
   return (
     <div className="space-y-8">
@@ -61,7 +57,7 @@ export default async function HomePage() {
 
       <section>
         <h2 className="mb-3 font-serif text-lg font-semibold">六个核心区域</h2>
-        <DistrictList districts={districts} />
+        <DistrictList districts={districtList} />
       </section>
     </div>
   );

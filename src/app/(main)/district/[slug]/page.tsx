@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDistrictBySlug } from "@/lib/queries";
 import { DISTRICTS } from "@/lib/chongqing/geo";
+import { encodeRouteSlug } from "@/lib/route-slug";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function DistrictPage({
   params,
@@ -46,7 +47,7 @@ export default async function DistrictPage({
             return (
               <li key={street.id}>
                 <Link
-                  href={`/street/${street.slug}`}
+                  href={`/street/${encodeRouteSlug(street.slug)}`}
                   className="block rounded border border-stone-200 bg-paper p-4 transition-colors hover:border-accent"
                 >
                   <div className="flex items-start justify-between gap-2">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 type Post = {
   id: string;
@@ -43,7 +44,9 @@ export function PostList({ posts }: { posts: Post[] }) {
             <div
               className="prose-retro mt-3 text-stone-700"
               dangerouslySetInnerHTML={{
-                __html: post.body.slice(0, 300) + (post.body.length > 300 ? "…" : ""),
+                __html: sanitizeHtml(
+                  post.body.slice(0, 300) + (post.body.length > 300 ? "…" : ""),
+                ),
               }}
             />
           </article>

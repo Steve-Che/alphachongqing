@@ -31,6 +31,9 @@ cp .env.example .env
 | `RESEND_API_KEY` | （可选）找回密码邮件，[Resend](https://resend.com) |
 | `EMAIL_FROM` | （可选）发件人，如 `阿尔法重庆 <noreply@yourdomain.com>` |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob 令牌（图片上传，可选） |
+| `DATABASE_URL_UNPOOLED` | （可选）Prisma 迁移用直连 URL，Neon 控制台提供 |
+| `UPSTASH_REDIS_REST_URL` | （可选）登录/注册速率限制 |
+| `UPSTASH_REDIS_REST_TOKEN` | （可选）与上配套 |
 
 ### 2. 数据库
 
@@ -39,6 +42,8 @@ npm install
 npx prisma migrate dev --name init
 npm run db:seed
 ```
+
+> **警告**：`npm run db:seed` 会执行 `clearCityData()` 清空城区/街道/铺位等业务数据后重新写入，**切勿在生产环境随意执行**。首次部署或本地开发初始化时使用即可。
 
 ### 3. 启动
 
@@ -89,9 +94,19 @@ npx vercel env pull .env.local
 npx vercel --prod
 ```
 
+## 访问策略（策略 A）
+
+| 功能 | 是否需要登录 |
+|------|----------------|
+| 浏览地图、区/街/店铺、文章、用户主页、公寓展示 | 否 |
+| 注册（需邀请码）、登录、写作、开店、留言、管理后台 | 是 |
+| `/api/health` 健康检查 | 否（供监控探测） |
+
+3D 区划边界与街道坐标的**运行时真源**为 `src/lib/chongqing/geo.ts`；数据库 `boundaryPolygon` 仅用于种子同步。
+
 ## 功能概览
 
-- 邀请制注册
+- 公开浏览 + 邀请制注册
 - 6 个核心区域 3D 地图（渝中、江北、南岸、沙坪坝、九龙坡、大渡口）
 - 区 → 街 → 店铺（六房间）/ 公寓选位
 - 长文（轻博客）与短文（微博式）
@@ -122,6 +137,22 @@ npx vercel --prod
 2. 忽略该控制台报错（不影响地图与开店功能）
 
 本站已对 3D 画布做了焦点隔离，可降低触发概率。
+
+## CI 与测试
+
+推送至 `main` 时 GitHub Actions 会执行 `prisma validate`、`lint` 与 `build`（见 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)）。
+
+本地冒烟测试（需数据库可用）：
+
+```bash
+npm run test:e2e
+```
+
+## 运维
+
+- **健康检查**：`GET /api/health` 返回 `{ "status": "ok" }`，数据库不可用时 503
+- **公开页缓存**：区划/店铺/文章等只读页 `revalidate = 60` 秒；开店/写作后通过 `revalidatePath` 失效首页等路径
+- **速率限制**：未配置 Upstash 时开发环境跳过；生产使用进程内节流（推荐配置 Upstash）
 
 ## 项目结构
 

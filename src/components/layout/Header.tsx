@@ -22,7 +22,7 @@ export async function Header() {
           <Link href="/guide" className="hover:text-stone-900">
             入驻指南
           </Link>
-          {session?.user && (
+          {session?.user ? (
             <>
               {residence?.shop && (
                 <Link href={`/shop/${residence.shop.slug}`} className="text-accent hover:underline">
@@ -62,13 +62,25 @@ export async function Header() {
               <form
                 action={async () => {
                   "use server";
-                  await signOut({ redirectTo: "/login" });
+                  await signOut({ redirectTo: "/" });
                 }}
               >
                 <Button type="submit" variant="ghost" size="sm">
                   退出
                 </Button>
               </form>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="hover:text-stone-900">
+                登录
+              </Link>
+              <Link
+                href="/register"
+                className="rounded bg-stone-800 px-3 py-1 text-white hover:bg-stone-700"
+              >
+                邀请码注册
+              </Link>
             </>
           )}
         </nav>

@@ -3,11 +3,15 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { signIn } from "@/lib/auth";
+import { rateLimitAuthAction } from "@/lib/rate-limit";
 import { AuthError } from "next-auth";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
 export async function registerUser(formData: FormData): Promise<ActionResult> {
+  const limited = await rateLimitAuthAction("register");
+  if (!limited.ok) return limited;
+
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const username = (formData.get("username") as string)?.trim();
   const password = formData.get("password") as string;
@@ -47,10 +51,17 @@ export async function registerUser(formData: FormData): Promise<ActionResult> {
         data: { email, username, passwordHash, displayName: username },
       });
 
-      await tx.inviteCode.update({
-        where: { id: code.id },
+      const updated = await tx.inviteCode.updateMany({
+        where: {
+          id: code.id,
+          revoked: false,
+          usedCount: { lt: code.maxUses },
+        },
         data: { usedCount: { increment: 1 } },
       });
+      if (updated.count === 0) {
+        throw new Error("邀请码已用完");
+      }
     });
 
     const signInResult = await signIn("credentials", {
@@ -74,6 +85,9 @@ export async function registerUser(formData: FormData): Promise<ActionResult> {
 }
 
 export async function loginUser(formData: FormData): Promise<ActionResult> {
+  const limited = await rateLimitAuthAction("login");
+  if (!limited.ok) return limited;
+
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const password = formData.get("password") as string;
 

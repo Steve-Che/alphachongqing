@@ -40,7 +40,7 @@ export async function openShop(
   if (!trimmedName) return { ok: false, error: "请填写店铺名称" };
 
   try {
-    const shop = await prisma.$transaction(async (tx) => {
+    const { shop, streetSlug } = await prisma.$transaction(async (tx) => {
       const slot = await tx.shopSlot.findUnique({
         where: { id: shopSlotId },
         include: { street: true },
@@ -86,10 +86,11 @@ export async function openShop(
         });
       }
 
-      return newShop;
+      return { shop: newShop, streetSlug: slot.street.slug };
     });
 
-    revalidatePath(`/street/${shop.slug}`);
+    revalidatePath(`/street/${streetSlug}`);
+    revalidatePath("/");
     return { ok: true, data: { slug: shop.slug } };
   } catch (e) {
     return {
@@ -149,19 +150,31 @@ export async function releaseResidence(): Promise<ActionResult> {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    include: { shop: { include: { shopSlot: true } }, apartmentUnit: true },
+    include: {
+      shop: { include: { shopSlot: { include: { street: true } } } },
+      apartmentUnit: true,
+    },
   });
 
   if (!dbUser) return { ok: false, error: "用户不存在" };
 
+  const shopSlug = dbUser.shop?.slug;
+  const streetSlug = dbUser.shop?.shopSlot.street.slug;
+
   try {
     await prisma.$transaction(async (tx) => {
       if (dbUser.shop) {
+        const shopId = dbUser.shop.id;
+        await tx.guestbookEntry.deleteMany({ where: { shopId } });
+        await tx.roomContent.deleteMany({
+          where: { shopRoom: { shopId } },
+        });
+        await tx.shopRoom.deleteMany({ where: { shopId } });
         await tx.shopSlot.update({
           where: { id: dbUser.shop.shopSlotId },
           data: { status: "VACANT" },
         });
-        await tx.shop.delete({ where: { id: dbUser.shop.id } });
+        await tx.shop.delete({ where: { id: shopId } });
       }
       if (dbUser.apartmentUnit) {
         await tx.apartmentUnit.update({
@@ -175,6 +188,8 @@ export async function releaseResidence(): Promise<ActionResult> {
       });
     });
 
+    if (streetSlug) revalidatePath(`/street/${streetSlug}`);
+    if (shopSlug) revalidatePath(`/shop/${shopSlug}`);
     revalidatePath("/");
     return { ok: true };
   } catch (e) {
@@ -265,11 +280,16 @@ export async function addStreetMessage(
   const trimmed = content.trim();
   if (!trimmed) return { ok: false, error: "留言不能为空" };
 
+  const street = await prisma.street.findUnique({
+    where: { id: streetId },
+    select: { slug: true },
+  });
+
   await prisma.streetMessage.create({
     data: { streetId, authorId: user.id, content: trimmed },
   });
 
-  revalidatePath(`/street`);
+  if (street) revalidatePath(`/street/${street.slug}`);
   return { ok: true };
 }
 
