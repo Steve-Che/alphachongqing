@@ -7,7 +7,6 @@ import {
   isFollowing,
 } from "@/lib/queries";
 import { FollowList } from "@/components/social/FollowList";
-import { loadMoreFollowers } from "@/app/actions/social";
 
 export default async function FollowersPage({
   params,
@@ -44,7 +43,8 @@ export default async function FollowersPage({
       <FollowList
         users={items}
         initialCursor={nextCursor}
-        loadMore={(cursor) => loadMoreFollowers(user.id, cursor)}
+        userId={user.id}
+        listType="followers"
         viewerId={session?.user?.id}
         followingMap={followingMap}
       />

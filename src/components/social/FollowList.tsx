@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import {
+  loadMoreFollowers,
+  loadMoreFollowing,
+} from "@/app/actions/social";
 import { AuthorLink } from "@/components/social/AuthorLink";
 import { FollowButton } from "@/components/social/FollowButton";
 import { LoadMoreFooter } from "@/components/ui/load-more-button";
@@ -12,19 +16,23 @@ type UserRow = {
   avatarUrl?: string | null;
 };
 
+type FollowListProps = {
+  users: UserRow[];
+  initialCursor: string | null;
+  userId: string;
+  listType: "followers" | "following";
+  viewerId?: string;
+  followingMap: Record<string, boolean>;
+};
+
 export function FollowList({
   users,
   initialCursor,
-  loadMore,
+  userId,
+  listType,
   viewerId,
   followingMap,
-}: {
-  users: UserRow[];
-  initialCursor: string | null;
-  loadMore: (cursor: string) => Promise<{ items: UserRow[]; nextCursor: string | null }>;
-  viewerId?: string;
-  followingMap: Record<string, boolean>;
-}) {
+}: FollowListProps) {
   const [items, setItems] = useState(users);
   const [cursor, setCursor] = useState(initialCursor);
   const [loading, setLoading] = useState(false);
@@ -58,7 +66,10 @@ export function FollowList({
         onLoadMore={async () => {
           if (!cursor) return;
           setLoading(true);
-          const result = await loadMore(cursor);
+          const result =
+            listType === "followers"
+              ? await loadMoreFollowers(userId, cursor)
+              : await loadMoreFollowing(userId, cursor);
           setItems((prev) => [...prev, ...result.items]);
           setCursor(result.nextCursor);
           setLoading(false);
