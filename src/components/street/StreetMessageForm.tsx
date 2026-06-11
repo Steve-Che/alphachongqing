@@ -9,9 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 
 export function StreetMessageForm({
   streetId,
+  streetSlug,
   canPostOfficial = false,
 }: {
   streetId: string;
+  streetSlug: string;
   canPostOfficial?: boolean;
 }) {
   const router = useRouter();
@@ -34,6 +36,11 @@ export function StreetMessageForm({
       if (result.ok) {
         form.reset();
         toast.success("街道留言已发布");
+        window.dispatchEvent(
+          new CustomEvent("street-activity-refresh", {
+            detail: { streetSlug },
+          }),
+        );
         router.refresh();
       } else {
         setError(result.error);

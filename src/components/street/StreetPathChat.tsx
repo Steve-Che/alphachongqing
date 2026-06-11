@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { formatPathBubbleLabel } from "@/lib/street-activity";
+import { encodeRouteSlug } from "@/lib/route-slug";
 import type { StreetPathBubble } from "@/lib/street-types";
 
 type StreetPathChatProps = {
@@ -16,23 +17,43 @@ export function StreetPathChat({
 }: StreetPathChatProps) {
   const [bubbles, setBubbles] = useState(initialBubbles);
 
+  const refreshBubbles = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `/api/street/${encodeRouteSlug(streetSlug)}/activity`,
+      );
+      if (!res.ok) return;
+      const data = (await res.json()) as { pathBubbles: StreetPathBubble[] };
+      setBubbles(data.pathBubbles);
+    } catch {
+      /* ignore */
+    }
+  }, [streetSlug]);
+
   useEffect(() => {
     setBubbles(initialBubbles);
   }, [initialBubbles]);
 
   useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/street/${encodeURIComponent(streetSlug)}/activity`);
-        if (!res.ok) return;
-        const data = (await res.json()) as { pathBubbles: StreetPathBubble[] };
-        setBubbles(data.pathBubbles);
-      } catch {
-        /* ignore */
+    void refreshBubbles();
+  }, [refreshBubbles]);
+
+  useEffect(() => {
+    const onRefresh = (e: Event) => {
+      const detail = (e as CustomEvent<{ streetSlug?: string }>).detail;
+      if (!detail?.streetSlug || detail.streetSlug === streetSlug) {
+        void refreshBubbles();
       }
-    }, 30000);
+    };
+    window.addEventListener("street-activity-refresh", onRefresh);
+    return () =>
+      window.removeEventListener("street-activity-refresh", onRefresh);
+  }, [streetSlug, refreshBubbles]);
+
+  useEffect(() => {
+    const interval = setInterval(() => void refreshBubbles(), 30000);
     return () => clearInterval(interval);
-  }, [streetSlug]);
+  }, [refreshBubbles]);
 
   if (bubbles.length === 0) {
     return (

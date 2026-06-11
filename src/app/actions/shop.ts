@@ -6,6 +6,7 @@ import { DEFAULT_ROOM_NAMES, ROOM_ORDER } from "@/lib/chongqing/geo";
 import { shopPath } from "@/lib/route-slug";
 import { slugify } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import { revalidateStreet } from "@/lib/revalidate-street";
 import { redirect } from "next/navigation";
 import { rateLimitMoveAction, rateLimitSocialAction } from "@/lib/rate-limit";
 import type { RoomType } from "@/generated/prisma/client";
@@ -94,7 +95,7 @@ export async function openShop(
       return { shop: newShop, streetSlug: slot.street.slug };
     });
 
-    revalidatePath(`/street/${streetSlug}`);
+    revalidateStreet(streetSlug);
     revalidatePath("/");
     return { ok: true, data: { slug: shop.slug } };
   } catch (e) {
@@ -143,7 +144,7 @@ export async function rentApartment(
     });
 
     revalidatePath(`/apartment/${unit.unit.id}`);
-    revalidatePath(`/street/${unit.streetSlug}`);
+    revalidateStreet(unit.streetSlug);
     revalidatePath("/");
     return { ok: true, data: { id: unit.unit.id } };
   } catch (e) {
@@ -230,8 +231,8 @@ export async function moveShop(
       };
     });
 
-    revalidatePath(`/street/${result.oldStreetSlug}`);
-    revalidatePath(`/street/${result.newStreetSlug}`);
+    revalidateStreet(result.oldStreetSlug);
+    revalidateStreet(result.newStreetSlug);
     revalidatePath(`/shop/${result.slug}`);
     revalidatePath(`/u/${user.username}`);
     revalidatePath("/");
@@ -314,8 +315,8 @@ export async function moveApartment(
       };
     });
 
-    revalidatePath(`/street/${result.oldStreetSlug}`);
-    revalidatePath(`/street/${result.newStreetSlug}`);
+    revalidateStreet(result.oldStreetSlug);
+    revalidateStreet(result.newStreetSlug);
     revalidatePath(`/apartment/${result.oldUnitId}`);
     revalidatePath(`/apartment/${result.id}`);
     revalidatePath(`/u/${user.username}`);
@@ -373,7 +374,7 @@ export async function releaseResidence(): Promise<ActionResult> {
       });
     });
 
-    if (streetSlug) revalidatePath(`/street/${streetSlug}`);
+    if (streetSlug) revalidateStreet(streetSlug);
     if (shopSlug) revalidatePath(`/shop/${shopSlug}`);
     revalidatePath("/");
     return { ok: true };
@@ -503,7 +504,7 @@ export async function addStreetMessage(
     },
   });
 
-  revalidatePath(`/street/${street.slug}`);
+  revalidateStreet(street.slug);
   return { ok: true };
 }
 
@@ -546,7 +547,7 @@ export async function updateShopSettings(data: {
     where: { shop: { id: shop.id } },
     select: { street: { select: { slug: true } } },
   });
-  if (street?.street.slug) revalidatePath(`/street/${street.street.slug}`);
+  if (street?.street.slug) revalidateStreet(street.street.slug);
   return { ok: true };
 }
 

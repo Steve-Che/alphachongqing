@@ -1049,23 +1049,50 @@ export async function getStreetPathBubbles(
   streetId: string,
   take = 12,
 ): Promise<StreetPathBubble[]> {
-  const messages = await prisma.streetMessage.findMany({
-    where: { streetId, archived: false },
-    orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
-    take,
-    include: {
-      author: { select: { displayName: true, username: true } },
-    },
+  const [messages, moments] = await Promise.all([
+    prisma.streetMessage.findMany({
+      where: { streetId, archived: false },
+      orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
+      take,
+      include: {
+        author: { select: { displayName: true, username: true } },
+      },
+    }),
+    prisma.post.findMany({
+      where: { streetId, type: "MOMENT", published: true },
+      orderBy: { createdAt: "desc" },
+      take,
+      include: {
+        author: { select: { displayName: true, username: true } },
+      },
+    }),
+  ]);
+
+  const bubbles: StreetPathBubble[] = [
+    ...messages.map((m) => ({
+      id: m.id,
+      authorName: m.author.displayName ?? m.author.username,
+      content: m.content,
+      isOfficial: m.isOfficial,
+      isPinned: m.isPinned,
+      createdAt: m.createdAt.toISOString(),
+    })),
+    ...moments.map((p) => ({
+      id: `moment-${p.id}`,
+      authorName: p.author.displayName ?? p.author.username,
+      content: p.body,
+      isOfficial: false,
+      isPinned: false,
+      createdAt: p.createdAt.toISOString(),
+    })),
+  ];
+
+  bubbles.sort((a, b) => {
+    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+    return b.createdAt.localeCompare(a.createdAt);
   });
 
-  return messages.map((m) => ({
-    id: m.id,
-    authorName: m.author.displayName ?? m.author.username,
-    content: m.content,
-    isOfficial: m.isOfficial,
-    isPinned: m.isPinned,
-    createdAt: m.createdAt.toISOString(),
-  }));
+  return bubbles.slice(0, take);
 }
 
 export async function getStreetActivity(

@@ -22,8 +22,6 @@ import { StreetStripView } from "@/components/street/StreetStripView";
 import { decodeRouteSlug } from "@/lib/route-slug";
 import { buildMeResidence } from "@/lib/residence-types";
 
-export const revalidate = 60;
-
 export default async function StreetPage({
   params,
 }: {
@@ -174,6 +172,7 @@ export default async function StreetPage({
         {session?.user && (
           <StreetMessageForm
             streetId={street.id}
+            streetSlug={street.slug}
             canPostOfficial={isChief || isAdmin}
           />
         )}
@@ -210,7 +209,11 @@ export default async function StreetPage({
             </li>
           ))}
           {street.streetMessages.length === 0 && (
-            <p className="text-stone-500">街上还很安静，来留第一条言吧。</p>
+            <p className="text-stone-500">
+              {pathBubbles.length > 0 || streetFeed.items.length > 0
+                ? "暂无街道大字报留言，上方气泡来自本街动态。欢迎在下方留言。"
+                : "街上还很安静，来留第一条言吧。"}
+            </p>
           )}
         </ul>
       </section>

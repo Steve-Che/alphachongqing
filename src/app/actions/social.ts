@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { revalidateStreet } from "@/lib/revalidate-street";
 import { rateLimitSocialAction } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { getPostDetailPath } from "@/lib/post-path";
@@ -218,7 +219,7 @@ export async function addComment(data: {
           body: "回复了你的街道留言",
         });
       }
-      revalidatePath(`/street/${msg.street.slug}`);
+      revalidateStreet(msg.street.slug);
     }
   }
 
@@ -253,7 +254,7 @@ export async function deleteComment(commentId: string): Promise<ActionResult> {
     revalidatePath(`/shop/${comment.guestbookEntry.shop.slug}`);
   }
   if (comment.streetMessage) {
-    revalidatePath(`/street/${comment.streetMessage.street.slug}`);
+    revalidateStreet(comment.streetMessage.street.slug);
   }
 
   return { ok: true };

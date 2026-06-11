@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { revalidateStreet } from "@/lib/revalidate-street";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 
 export type ActionResult<T = void> =
@@ -78,7 +79,7 @@ export async function createMoment(data: {
       where: { id: data.streetId },
       select: { slug: true },
     });
-    if (street) revalidatePath(`/street/${street.slug}`);
+    if (street) revalidateStreet(street.slug);
   }
   return { ok: true, data: { id: post.id } };
 }

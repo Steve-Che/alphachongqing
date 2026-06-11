@@ -12,6 +12,11 @@ export function encodeRouteSlug(slug: string): string {
   return encodeURIComponent(slug);
 }
 
+/** 街道页路径（中文 slug 需编码） */
+export function streetPath(slug: string): string {
+  return `/street/${encodeRouteSlug(slug)}`;
+}
+
 /** 店铺页路径（中文店名 slug 需编码） */
 export function shopPath(slug: string, room?: string): string {
   const base = `/shop/${encodeRouteSlug(slug)}`;

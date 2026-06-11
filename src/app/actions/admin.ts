@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { revalidateStreet } from "@/lib/revalidate-street";
 
 export type ActionResult<T = void> =
   | { ok: true; data?: T }
@@ -31,7 +32,7 @@ export async function archiveStreetMessage(
     data: { archived: true },
   });
 
-  revalidatePath(`/street/${msg.street.slug}`);
+  revalidateStreet(msg.street.slug);
   revalidatePath("/admin");
   return { ok: true };
 }
@@ -65,7 +66,7 @@ export async function assignStreetChief(
     },
   });
 
-  revalidatePath(`/street/${street.slug}`);
+  revalidateStreet(street.slug);
   revalidatePath("/admin");
   return { ok: true };
 }
@@ -93,6 +94,6 @@ export async function pinStreetMessage(
     data: { isPinned: pinned },
   });
 
-  revalidatePath(`/street/${msg.street.slug}`);
+  revalidateStreet(msg.street.slug);
   return { ok: true };
 }

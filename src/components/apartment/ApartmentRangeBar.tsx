@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { ApartmentRangeModal } from "@/components/apartment/ApartmentRangeModal";
 import type { ApartmentRangeSummary } from "@/lib/street-types";
@@ -25,6 +26,8 @@ export function ApartmentRangeBar({
   username,
 }: ApartmentRangeBarProps) {
   const [selected, setSelected] = useState<ApartmentRangeSummary | null>(null);
+  const isLoggedIn = !!username;
+  const hasShopResidence = residence?.type === "SHOP";
 
   return (
     <>
@@ -55,9 +58,27 @@ export function ApartmentRangeBar({
             );
           })}
         </div>
-        {!canRent && !canMoveApartment && (
+        {!isLoggedIn && (
           <p className="mt-2 text-center text-[11px] text-stone-500">
-            登录后可查看空房并入住
+            <Link href="/login" className="text-[#b84a2f] hover:underline">
+              登录
+            </Link>
+            后可查看空房并入住
+          </p>
+        )}
+        {isLoggedIn && hasShopResidence && (
+          <p className="mt-2 text-center text-[11px] text-stone-500">
+            您已有店铺，暂不可入住公寓。点击上方楼栋可查看空房与住户。
+          </p>
+        )}
+        {isLoggedIn && canMoveApartment && (
+          <p className="mt-2 text-center text-[11px] text-stone-500">
+            点击楼栋选择空房，可搬迁至本街
+          </p>
+        )}
+        {isLoggedIn && canRent && (
+          <p className="mt-2 text-center text-[11px] text-stone-500">
+            点击楼栋选择室号即可入住
           </p>
         )}
       </section>
