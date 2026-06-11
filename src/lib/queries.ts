@@ -59,8 +59,10 @@ export const getUserResidence = cache(async (userId: string) => {
         select: {
           slug: true,
           name: true,
+          shopSlotId: true,
           shopSlot: {
             select: {
+              id: true,
               street: { select: { id: true, nameZh: true, slug: true } },
             },
           },

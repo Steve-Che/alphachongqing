@@ -19,6 +19,7 @@ import {
 } from "./StreetScene3D";
 import { MapCanvasSetup } from "./MapCanvasSetup";
 import { encodeRouteSlug } from "@/lib/route-slug";
+import type { MeResidence } from "@/lib/residence-types";
 import { ApartmentBuildingPanel } from "./ApartmentBuildingPanel";
 import type { ApartmentBuildingData } from "./ApartmentTowers";
 import { SketchupSceneLighting } from "./sketchup-materials";
@@ -59,15 +60,16 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
   const [hoveredBuilding, setHoveredBuilding] = useState<number | null>(null);
   const [selectedBuilding, setSelectedBuilding] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [canSettle, setCanSettle] = useState(false);
+  const [canOpenShop, setCanOpenShop] = useState(false);
+  const [residence, setResidence] = useState<MeResidence | null>(null);
 
   useEffect(() => {
     fetch("/api/me")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         setIsLoggedIn(!!data?.user);
-        const hasResidence = !!(data?.residence?.shop || data?.residence?.apartmentUnit);
-        setCanSettle(!!data?.user && !hasResidence);
+        setResidence(data?.residence ?? null);
+        setCanOpenShop(!!data?.user && !data?.residence?.type);
       });
   }, []);
 
@@ -367,9 +369,11 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
             <StreetSlotPanel
               slot={activeSlot}
               streetSlug={streetData.slug}
+              streetName={streetData.nameZh}
               pinned={!!selectedSlot}
               isLoggedIn={isLoggedIn}
-              canOpenShop={canSettle}
+              canOpenShop={canOpenShop}
+              residence={residence}
               onClear={() => {
                 setSelectedSlotId(null);
                 setHoveredSlotId(null);
@@ -381,9 +385,11 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
             <ApartmentBuildingPanel
               building={activeBuildingData}
               streetSlug={streetData.slug}
+              streetName={streetData.nameZh}
               pinned={!!selectedBuilding}
               isLoggedIn={isLoggedIn}
-              canRent={canSettle}
+              canRent={canOpenShop}
+              residence={residence}
               onClear={() => {
                 setSelectedBuilding(null);
                 setHoveredBuilding(null);

@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { MeResidence } from "@/lib/residence-types";
 import { getBuildingUnitsForPicker } from "@/app/actions/shop";
 import { RentApartmentButton } from "./RentApartmentButton";
+import { MoveApartmentButton } from "./MoveApartmentButton";
 
 type BuildingSummary = {
   id: string;
@@ -22,10 +24,18 @@ type Unit = {
 export function ApartmentPicker({
   buildings,
   canRent,
+  canMoveApartment,
+  residence,
+  streetName,
+  streetSlug,
   username,
 }: {
   buildings: BuildingSummary[];
   canRent: boolean;
+  canMoveApartment?: boolean;
+  residence?: MeResidence | null;
+  streetName?: string;
+  streetSlug?: string;
   username?: string;
 }) {
   const [buildingId, setBuildingId] = useState(buildings[0]?.id ?? "");
@@ -52,19 +62,33 @@ export function ApartmentPicker({
     };
   }, [buildingId]);
 
-  if (!canRent) {
+  if (!canRent && !canMoveApartment) {
     return (
       <p className="text-sm text-stone-500">
-        你已拥有店铺或公寓，如需更换请先在
-        <a href={username ? `/u/${username}` : "/"} className="text-accent"> 我的主页 </a>
-        释放当前地盘。
+        你已拥有店铺或公寓。如需更换请先在
+        <a href={username ? `/u/${username}` : "/"} className="text-accent">
+          {" "}
+          我的主页{" "}
+        </a>
+        释放当前地盘，或使用「搬家」换到同类型新址。
       </p>
     );
   }
 
+  const selectedUnit = vacantUnits.find((u) => u.id === unitId);
+  const currentLabel = canMoveApartment && residence?.apartmentUnit
+    ? `${residence.apartmentUnit.streetName} · ${residence.apartmentUnit.buildingNumber} 号楼 ${residence.apartmentUnit.unitNumber} 室`
+    : "";
+  const targetLabel =
+    selectedUnit && building
+      ? `${streetName ?? streetSlug ?? "本街"} · ${building.buildingNumber} 号楼 ${selectedUnit.unitNumber} 室`
+      : "";
+
   return (
     <div className="space-y-4 rounded-lg border border-dashed border-accent bg-paper p-4">
-      <p className="text-sm font-medium text-stone-800">选择公寓入住</p>
+      <p className="text-sm font-medium text-stone-800">
+        {canMoveApartment ? "选择新公寓搬家" : "选择公寓入住"}
+      </p>
 
       <div className="flex flex-wrap gap-3">
         <label className="text-sm text-stone-600">
@@ -105,7 +129,14 @@ export function ApartmentPicker({
         </label>
       </div>
 
-      {unitId && <RentApartmentButton unitId={unitId} />}
+      {unitId && canRent && <RentApartmentButton unitId={unitId} streetSlug={streetSlug} />}
+      {unitId && canMoveApartment && currentLabel && targetLabel && (
+        <MoveApartmentButton
+          targetUnitId={unitId}
+          targetLabel={targetLabel}
+          currentLabel={currentLabel}
+        />
+      )}
 
       {occupiedUnits.length > 0 && (
         <ul className="space-y-1 border-t border-stone-200 pt-3 text-sm text-stone-600">

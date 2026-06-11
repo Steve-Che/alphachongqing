@@ -57,8 +57,29 @@ export default async function GuidePage({
           </div>
         </div>
         <p className="text-sm text-stone-500">
-          每人限拥有一间店铺 <strong>或</strong> 一间公寓。更换需先在「我的主页」释放当前地盘。
+          每人限拥有一间店铺 <strong>或</strong> 一间公寓。
         </p>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-serif text-xl font-semibold">搬家与释放</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-lg border border-stone-200 bg-paper p-4">
+            <h3 className="font-medium text-stone-900">搬家（换址）</h3>
+            <p className="mt-2 text-sm text-stone-600">
+              店主可把店铺迁到另一空铺，住户可搬到另一空房。店铺会保留名称、链接、房间布置与留言板；公寓链接会更新为新房间。在
+              <Link href="/#map" className="text-accent hover:underline">城市地图</Link>
+              选中空铺/空楼，或去街道页点击「搬到此铺 / 搬到此间」。
+            </p>
+            <p className="mt-2 text-xs text-stone-400">每 24 小时可搬家一次。</p>
+          </div>
+          <div className="rounded-lg border border-stone-200 bg-paper p-4">
+            <h3 className="font-medium text-stone-900">释放（退租/关店）</h3>
+            <p className="mt-2 text-sm text-stone-600">
+              在「我的主页」释放当前地盘：店铺将被删除（含留言与房间内容），公寓将退租。释放后才可以重新选择另一种业态（开店或入住）。
+            </p>
+          </div>
+        </div>
       </section>
 
       <section className="space-y-4">

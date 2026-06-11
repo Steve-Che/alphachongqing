@@ -137,10 +137,15 @@ export default async function UserPage({
         </div>
 
         {isSelf && (
-          <div className="mt-3 flex flex-wrap gap-3 text-sm">
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
             <Link href="/settings" className="text-accent hover:underline">
               编辑资料
             </Link>
+            {(user.shop || user.apartmentUnit) && (
+              <Link href="/#map" className="text-accent hover:underline">
+                去搬家
+              </Link>
+            )}
             {(user.shop || user.apartmentUnit) && <ReleaseResidenceButton />}
           </div>
         )}

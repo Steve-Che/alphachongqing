@@ -23,6 +23,9 @@ export async function ResidenceBanner({ userId }: { userId: string }) {
           <Link href={`/shop/${residence.shop.slug}`} className="text-accent hover:underline">
             管理店铺
           </Link>
+          <Link href="/#map" className="text-accent hover:underline">
+            搬家
+          </Link>
           <Link href="/write/article" className="text-stone-600 hover:underline">
             写长文
           </Link>
@@ -49,6 +52,9 @@ export async function ResidenceBanner({ userId }: { userId: string }) {
             className="text-accent hover:underline"
           >
             我的公寓
+          </Link>
+          <Link href="/#map" className="text-accent hover:underline">
+            搬家
           </Link>
           <Link href="/write/moment" className="text-stone-600 hover:underline">
             发短文

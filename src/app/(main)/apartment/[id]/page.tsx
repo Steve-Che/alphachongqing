@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { getApartmentUnit, getUserResidence } from "@/lib/queries";
 import { PostList } from "@/components/feed/PostList";
 import { RentApartmentButton } from "@/components/shop/RentApartmentButton";
+import { MoveApartmentButton } from "@/components/shop/MoveApartmentButton";
+import { buildMeResidence } from "@/lib/residence-types";
 import { prisma } from "@/lib/db";
 import { encodeRouteSlug } from "@/lib/route-slug";
 
@@ -26,7 +28,14 @@ export default async function ApartmentPage({
   const residence = session?.user?.id
     ? await getUserResidence(session.user.id)
     : null;
-  const canRent = !!session?.user && !residence?.shop && !residence?.apartmentUnit;
+  const meResidence = residence ? buildMeResidence(residence) : null;
+  const canRent = !!session?.user && !meResidence?.type;
+  const canMoveApartment =
+    !!session?.user && meResidence?.type === "APARTMENT" && !unit.resident;
+  const targetLabel = `${street.nameZh} · ${unit.building.buildingNumber} 号楼 ${unit.unitNumber} 室`;
+  const currentLabel = meResidence?.apartmentUnit
+    ? `${meResidence.apartmentUnit.streetName} · ${meResidence.apartmentUnit.buildingNumber} 号楼 ${meResidence.apartmentUnit.unitNumber} 室`
+    : "";
 
   const posts = unit.resident
     ? await prisma.post.findMany({
@@ -76,13 +85,23 @@ export default async function ApartmentPage({
             <p className="text-stone-600">此间空置，欢迎入住。</p>
             {canRent ? (
               <RentApartmentButton unitId={unit.id} streetSlug={street.slug} />
+            ) : canMoveApartment && currentLabel ? (
+              <MoveApartmentButton
+                targetUnitId={unit.id}
+                targetLabel={targetLabel}
+                currentLabel={currentLabel}
+              />
+            ) : session?.user && meResidence?.type === "SHOP" ? (
+              <p className="text-sm text-stone-500">
+                你已有店铺。店铺与公寓不可互换，请先在主页释放后再入住。
+              </p>
             ) : session?.user ? (
               <p className="text-sm text-stone-500">
-                你已有地盘。如需入住请先在
-                <Link href={`/u/${session.user.username}`} className="text-accent hover:underline">
-                  我的主页
+                你已有地盘。可在
+                <Link href="/#map" className="text-accent hover:underline">
+                  城市地图
                 </Link>
-                释放当前店铺或公寓。
+                或街道页选择空房搬家。
               </p>
             ) : (
               <p className="text-sm text-stone-500">

@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { encodeRouteSlug } from "@/lib/route-slug";
+import type { MeResidence } from "@/lib/residence-types";
 import { OpenShopForm } from "@/components/shop/OpenShopForm";
+import { MoveShopButton } from "@/components/shop/MoveShopButton";
 import { StreetScene, type StreetSlotData } from "./StreetScene";
 import type { ApartmentBuildingData } from "./ApartmentTowers";
 
@@ -46,21 +48,28 @@ export function StreetScene3D({
 export function StreetSlotPanel({
   slot,
   streetSlug,
+  streetName,
   pinned,
   onClear,
   isLoggedIn,
   canOpenShop,
+  residence,
 }: {
   slot: StreetSlotData | null;
   streetSlug: string;
+  streetName?: string;
   pinned?: boolean;
   onClear?: () => void;
   isLoggedIn?: boolean;
   canOpenShop?: boolean;
+  residence?: MeResidence | null;
 }) {
   if (!slot) return null;
 
   const occupied = slot.status === "OCCUPIED" && slot.shop;
+  const canMoveShop =
+    isLoggedIn && residence?.type === "SHOP" && residence.shop;
+  const targetStreetName = streetName ?? streetSlug;
 
   return (
     <div className="pointer-events-auto max-w-sm rounded-lg border border-stone-200 bg-paper/95 p-4 shadow-md backdrop-blur-sm">
@@ -113,13 +122,24 @@ export function StreetSlotPanel({
           </h3>
           {isLoggedIn && canOpenShop ? (
             <OpenShopForm shopSlotId={slot.id} compact />
+          ) : isLoggedIn && canMoveShop ? (
+            <MoveShopButton
+              targetShopSlotId={slot.id}
+              targetStreetName={targetStreetName}
+              shopName={residence.shop!.name}
+              currentStreetName={residence.shop!.streetName}
+              compact
+            />
           ) : isLoggedIn ? (
             <p className="mt-2 text-sm text-stone-600">
-              你已有地盘，请先在主页释放后再开店。
+              你已有公寓。店铺与公寓不可互换，请先在主页释放后再开店。
             </p>
           ) : (
             <p className="mt-2 text-sm text-stone-600">
-              <Link href={`/login?callbackUrl=/street/${encodeRouteSlug(streetSlug)}`} className="text-accent hover:underline">
+              <Link
+                href={`/login?callbackUrl=/street/${encodeRouteSlug(streetSlug)}`}
+                className="text-accent hover:underline"
+              >
                 登录
               </Link>
               后即可在此开店

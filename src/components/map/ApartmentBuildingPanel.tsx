@@ -1,22 +1,27 @@
 "use client";
 
+import type { MeResidence } from "@/lib/residence-types";
 import { ApartmentRentPanel } from "./ApartmentRentPanel";
 import type { ApartmentBuildingData } from "./ApartmentTowers";
 
 export function ApartmentBuildingPanel({
   building,
   streetSlug,
+  streetName,
   pinned,
   onClear,
   isLoggedIn,
   canRent,
+  residence,
 }: {
   building: ApartmentBuildingData | null;
   streetSlug: string;
+  streetName?: string;
   pinned?: boolean;
   onClear?: () => void;
   isLoggedIn?: boolean;
   canRent?: boolean;
+  residence?: MeResidence | null;
 }) {
   if (!building) return null;
 
@@ -49,8 +54,10 @@ export function ApartmentBuildingPanel({
         <ApartmentRentPanel
           building={building}
           streetSlug={streetSlug}
+          streetName={streetName}
           isLoggedIn={isLoggedIn}
           canRent={canRent}
+          residence={residence}
         />
       </div>
     </div>

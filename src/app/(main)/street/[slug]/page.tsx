@@ -11,6 +11,7 @@ import { ApartmentPicker } from "@/components/shop/ApartmentPicker";
 import { ResidenceBanner } from "@/components/residence/ResidenceBanner";
 import { StreetMessageForm } from "@/components/street/StreetMessageForm";
 import { decodeRouteSlug } from "@/lib/route-slug";
+import { buildMeResidence } from "@/lib/residence-types";
 
 export const revalidate = 60;
 
@@ -30,7 +31,11 @@ export default async function StreetPage({
   const residence = session?.user?.id
     ? await getUserResidence(session.user.id)
     : null;
-  const canSettle = !!session?.user && !residence?.shop && !residence?.apartmentUnit;
+  const meResidence = residence ? buildMeResidence(residence) : null;
+  const canOpenShop = !!session?.user && !meResidence?.type;
+  const canMoveShop = !!session?.user && meResidence?.type === "SHOP";
+  const canRent = canOpenShop;
+  const canMoveApartment = !!session?.user && meResidence?.type === "APARTMENT";
   const streetFeed = await getStreetFeed(street.id);
   const feedItems = streetFeed.items;
   const feedCursor = streetFeed.nextCursor;
@@ -87,13 +92,18 @@ export default async function StreetPage({
             后可在此开店
           </p>
         )}
-        {session?.user && !canSettle && (
+        {session?.user && canMoveShop && meResidence?.shop && (
           <p className="mb-4 text-sm text-amber-800">
-            你已有地盘。如需在本街开店，请先在
-            <Link href={`/u/${session.user.username}`} className="text-accent hover:underline">
-              我的主页
+            你是店主，可在下方空铺点击「搬到此铺」换址（店铺内容保留），或去
+            <Link href="/#map" className="text-accent hover:underline">
+              城市地图
             </Link>
-            释放当前店铺或公寓。
+            选新街道。
+          </p>
+        )}
+        {session?.user && meResidence?.type === "APARTMENT" && (
+          <p className="mb-4 text-sm text-stone-600">
+            你已有公寓。店铺与公寓不可互换，请先在主页释放后再开店。
           </p>
         )}
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -101,7 +111,11 @@ export default async function StreetPage({
             <ShopSlotCard
               key={slot.id}
               slot={slot}
-              canOpenShop={canSettle}
+              canOpenShop={canOpenShop}
+              canMoveShop={canMoveShop}
+              shopName={meResidence?.shop?.name}
+              currentStreetName={meResidence?.shop?.streetName}
+              targetStreetName={street.nameZh}
             />
           ))}
         </ul>
@@ -111,7 +125,11 @@ export default async function StreetPage({
         <h2 className="mb-4 font-serif text-lg font-semibold">公寓楼</h2>
         <ApartmentPicker
           buildings={street.apartmentBuildings}
-          canRent={canSettle}
+          canRent={canRent}
+          canMoveApartment={canMoveApartment}
+          residence={meResidence}
+          streetName={street.nameZh}
+          streetSlug={street.slug}
           username={session?.user?.username}
         />
         <details className="mt-4">

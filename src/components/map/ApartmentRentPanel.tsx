@@ -3,30 +3,42 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { encodeRouteSlug } from "@/lib/route-slug";
+import type { MeResidence } from "@/lib/residence-types";
 import { getBuildingUnitsForPicker } from "@/app/actions/shop";
 import { RentApartmentButton } from "@/components/shop/RentApartmentButton";
+import { MoveApartmentButton } from "@/components/shop/MoveApartmentButton";
 import type { ApartmentBuildingData } from "./ApartmentTowers";
 
 export function ApartmentRentPanel({
   building,
   streetSlug,
+  streetName,
   isLoggedIn,
   canRent,
+  residence,
 }: {
   building: ApartmentBuildingData;
   streetSlug: string;
+  streetName?: string;
   isLoggedIn?: boolean;
   canRent?: boolean;
+  residence?: MeResidence | null;
 }) {
   const [vacantUnitId, setVacantUnitId] = useState<string | null>(null);
+  const [vacantUnitNumber, setVacantUnitNumber] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   const hasVacancy = building.occupiedCount < building.totalUnits;
   const hasResidents = building.occupiedCount > 0;
+  const canMoveApartment =
+    isLoggedIn && residence?.type === "APARTMENT" && residence.apartmentUnit;
+  const shouldLoadVacant = hasVacancy && (canRent || canMoveApartment);
+  const targetStreetName = streetName ?? streetSlug;
 
   useEffect(() => {
-    if (!hasVacancy || !canRent) {
+    if (!shouldLoadVacant) {
       setVacantUnitId(null);
+      setVacantUnitNumber(null);
       return;
     }
     setLoading(true);
@@ -34,9 +46,19 @@ export function ApartmentRentPanel({
       .then((units) => {
         const vacant = units.find((u) => !u.residentId);
         setVacantUnitId(vacant?.id ?? null);
+        setVacantUnitNumber(vacant?.unitNumber ?? null);
       })
       .finally(() => setLoading(false));
-  }, [building.id, hasVacancy, canRent]);
+  }, [building.id, shouldLoadVacant]);
+
+  const targetLabel =
+    vacantUnitNumber != null
+      ? `${targetStreetName} · ${building.buildingNumber} 号楼 ${vacantUnitNumber} 室`
+      : `${targetStreetName} · ${building.buildingNumber} 号楼`;
+
+  const currentLabel = canMoveApartment
+    ? `${residence!.apartmentUnit!.streetName} · ${residence!.apartmentUnit!.buildingNumber} 号楼 ${residence!.apartmentUnit!.unitNumber} 室`
+    : "";
 
   return (
     <div className="space-y-3">
@@ -58,9 +80,22 @@ export function ApartmentRentPanel({
           ) : (
             <p className="text-sm text-stone-600">此楼暂无空房。</p>
           )
+        ) : isLoggedIn && canMoveApartment ? (
+          loading ? (
+            <p className="text-sm text-stone-500">正在查找空房…</p>
+          ) : vacantUnitId ? (
+            <MoveApartmentButton
+              targetUnitId={vacantUnitId}
+              targetLabel={targetLabel}
+              currentLabel={currentLabel}
+              compact
+            />
+          ) : (
+            <p className="text-sm text-stone-600">此楼暂无空房。</p>
+          )
         ) : isLoggedIn ? (
           <p className="text-sm text-stone-600">
-            你已有地盘，请先在主页释放后再入住。
+            你已有店铺。店铺与公寓不可互换，请先在主页释放后再入住。
           </p>
         ) : (
           <p className="text-sm text-stone-600">

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getUserResidence, getUserStats } from "@/lib/queries";
+import { buildMeResidence } from "@/lib/residence-types";
 
 export async function GET() {
   const session = await auth();
@@ -13,20 +14,15 @@ export async function GET() {
     getUserStats(session.user.id),
   ]);
 
+  const meResidence = buildMeResidence(residence);
+
   return NextResponse.json({
     user: {
       username: session.user.username,
       role: session.user.role,
       displayName: session.user.name,
     },
-    residence: residence
-      ? {
-          shop: residence.shop ? { slug: residence.shop.slug } : undefined,
-          apartmentUnit: residence.apartmentUnit
-            ? { id: residence.apartmentUnit.id }
-            : undefined,
-        }
-      : null,
+    residence: meResidence,
     stats: {
       hasResidence: stats.hasResidence,
       postCount: stats.postCount,

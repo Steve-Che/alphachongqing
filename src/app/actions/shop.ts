@@ -6,7 +6,7 @@ import { DEFAULT_ROOM_NAMES, ROOM_ORDER } from "@/lib/chongqing/geo";
 import { slugify } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { rateLimitSocialAction } from "@/lib/rate-limit";
+import { rateLimitMoveAction, rateLimitSocialAction } from "@/lib/rate-limit";
 import type { RoomType } from "@/generated/prisma/client";
 
 export type ActionResult<T = void> =
@@ -146,6 +146,181 @@ export async function rentApartment(
     return {
       ok: false,
       error: e instanceof Error ? e.message : "选位失败",
+    };
+  }
+}
+
+export async function moveShop(
+  targetShopSlotId: string,
+): Promise<
+  ActionResult<{
+    slug: string;
+    shopName: string;
+    oldStreetSlug: string;
+    newStreetSlug: string;
+    oldStreetName: string;
+    newStreetName: string;
+  }>
+> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "请先登录" };
+
+  const limited = await rateLimitMoveAction(user.id);
+  if (!limited.ok) return limited;
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    include: {
+      shop: {
+        include: {
+          shopSlot: { include: { street: true } },
+        },
+      },
+    },
+  });
+
+  if (!dbUser?.shop) return { ok: false, error: "您还没有店铺" };
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const targetSlot = await tx.shopSlot.findUnique({
+        where: { id: targetShopSlotId },
+        include: { street: true },
+      });
+
+      if (!targetSlot || targetSlot.status !== "VACANT") {
+        throw new Error("铺位已被占用");
+      }
+      if (targetSlot.isCenter) {
+        throw new Error("街心广场不可开店");
+      }
+      if (targetSlot.id === dbUser.shop!.shopSlotId) {
+        throw new Error("你已在该铺位");
+      }
+
+      const oldStreetSlug = dbUser.shop!.shopSlot.street.slug;
+      const oldStreetName = dbUser.shop!.shopSlot.street.nameZh;
+      const newStreetSlug = targetSlot.street.slug;
+      const newStreetName = targetSlot.street.nameZh;
+
+      await tx.shopSlot.update({
+        where: { id: dbUser.shop!.shopSlotId },
+        data: { status: "VACANT" },
+      });
+      await tx.shopSlot.update({
+        where: { id: targetSlot.id },
+        data: { status: "OCCUPIED" },
+      });
+      await tx.shop.update({
+        where: { id: dbUser.shop!.id },
+        data: { shopSlotId: targetSlot.id },
+      });
+
+      return {
+        slug: dbUser.shop!.slug,
+        shopName: dbUser.shop!.name,
+        oldStreetSlug,
+        newStreetSlug,
+        oldStreetName,
+        newStreetName,
+      };
+    });
+
+    revalidatePath(`/street/${result.oldStreetSlug}`);
+    revalidatePath(`/street/${result.newStreetSlug}`);
+    revalidatePath(`/shop/${result.slug}`);
+    revalidatePath(`/u/${user.username}`);
+    revalidatePath("/");
+    return { ok: true, data: result };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "搬家失败",
+    };
+  }
+}
+
+export async function moveApartment(
+  targetUnitId: string,
+): Promise<
+  ActionResult<{
+    id: string;
+    oldUnitId: string;
+    oldStreetSlug: string;
+    newStreetSlug: string;
+    oldLabel: string;
+    newLabel: string;
+  }>
+> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "请先登录" };
+
+  const limited = await rateLimitMoveAction(user.id);
+  if (!limited.ok) return limited;
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    include: {
+      apartmentUnit: {
+        include: {
+          building: { include: { street: true } },
+        },
+      },
+    },
+  });
+
+  if (!dbUser?.apartmentUnit) return { ok: false, error: "您还没有入住公寓" };
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const targetUnit = await tx.apartmentUnit.findUnique({
+        where: { id: targetUnitId },
+        include: { building: { include: { street: true } } },
+      });
+
+      if (!targetUnit || targetUnit.residentId) {
+        throw new Error("该公寓位已被占用");
+      }
+      if (targetUnit.id === dbUser.apartmentUnit!.id) {
+        throw new Error("你已在该房间");
+      }
+
+      const oldUnit = dbUser.apartmentUnit!;
+      const oldStreetSlug = oldUnit.building.street.slug;
+      const newStreetSlug = targetUnit.building.street.slug;
+      const oldLabel = `${oldUnit.building.street.nameZh} · ${oldUnit.building.buildingNumber} 号楼 ${oldUnit.unitNumber} 室`;
+      const newLabel = `${targetUnit.building.street.nameZh} · ${targetUnit.building.buildingNumber} 号楼 ${targetUnit.unitNumber} 室`;
+
+      await tx.apartmentUnit.update({
+        where: { id: oldUnit.id },
+        data: { residentId: null },
+      });
+      await tx.apartmentUnit.update({
+        where: { id: targetUnit.id },
+        data: { residentId: user.id },
+      });
+
+      return {
+        id: targetUnit.id,
+        oldUnitId: oldUnit.id,
+        oldStreetSlug,
+        newStreetSlug,
+        oldLabel,
+        newLabel,
+      };
+    });
+
+    revalidatePath(`/street/${result.oldStreetSlug}`);
+    revalidatePath(`/street/${result.newStreetSlug}`);
+    revalidatePath(`/apartment/${result.oldUnitId}`);
+    revalidatePath(`/apartment/${result.id}`);
+    revalidatePath(`/u/${user.username}`);
+    revalidatePath("/");
+    return { ok: true, data: result };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "搬家失败",
     };
   }
 }

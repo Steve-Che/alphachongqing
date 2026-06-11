@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { OpenShopForm } from "./OpenShopForm";
+import { MoveShopButton } from "./MoveShopButton";
 
 type ShopSlotCardProps = {
   slot: {
@@ -13,9 +14,20 @@ type ShopSlotCardProps = {
     } | null;
   };
   canOpenShop: boolean;
+  canMoveShop?: boolean;
+  shopName?: string;
+  currentStreetName?: string;
+  targetStreetName?: string;
 };
 
-export function ShopSlotCard({ slot, canOpenShop }: ShopSlotCardProps) {
+export function ShopSlotCard({
+  slot,
+  canOpenShop,
+  canMoveShop,
+  shopName,
+  currentStreetName,
+  targetStreetName,
+}: ShopSlotCardProps) {
   const occupied = slot.status === "OCCUPIED" && slot.shop;
 
   return (
@@ -50,6 +62,14 @@ export function ShopSlotCard({ slot, canOpenShop }: ShopSlotCardProps) {
         <div>
           <p className="mt-1 text-sm text-stone-500">招租中</p>
           {canOpenShop && <OpenShopForm shopSlotId={slot.id} />}
+          {canMoveShop && shopName && currentStreetName && targetStreetName && (
+            <MoveShopButton
+              targetShopSlotId={slot.id}
+              targetStreetName={targetStreetName}
+              shopName={shopName}
+              currentStreetName={currentStreetName}
+            />
+          )}
         </div>
       )}
     </li>

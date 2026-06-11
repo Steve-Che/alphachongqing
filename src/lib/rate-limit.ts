@@ -61,6 +61,62 @@ function getSocialRatelimit(): Ratelimit | null {
   return socialRatelimit;
 }
 
+let moveRatelimit: Ratelimit | null = null;
+
+function getMoveRatelimit(): Ratelimit | null {
+  if (moveRatelimit) return moveRatelimit;
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+  moveRatelimit = new Ratelimit({
+    redis: new Redis({ url, token }),
+    limiter: Ratelimit.slidingWindow(1, "24 h"),
+    prefix: "alphacq:move",
+  });
+  return moveRatelimit;
+}
+
+const MOVE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function checkMemoryMoveLimit(key: string): boolean {
+  const now = Date.now();
+  const entry = memoryStore.get(key);
+  if (!entry || now > entry.resetAt) {
+    memoryStore.set(key, { count: 1, resetAt: now + MOVE_WINDOW_MS });
+    return true;
+  }
+  return entry.count < 1;
+}
+
+/** 搬家操作：每用户 24 小时 1 次 */
+export async function rateLimitMoveAction(
+  userId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (
+    process.env.NODE_ENV === "development" &&
+    !process.env.UPSTASH_REDIS_REST_URL
+  ) {
+    return { ok: true };
+  }
+
+  const key = `move:${userId}`;
+  const rl = getMoveRatelimit();
+
+  if (rl) {
+    const { success } = await rl.limit(key);
+    if (!success) {
+      return { ok: false, error: "24 小时内只能搬家一次，请稍后再试" };
+    }
+    return { ok: true };
+  }
+
+  if (process.env.NODE_ENV === "production" && !checkMemoryMoveLimit(key)) {
+    return { ok: false, error: "24 小时内只能搬家一次，请稍后再试" };
+  }
+
+  return { ok: true };
+}
+
 /** 评论/留言等社交 Server Action 速率限制 */
 export async function rateLimitSocialAction(
   action: string,
