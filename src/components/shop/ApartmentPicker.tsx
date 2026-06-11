@@ -1,18 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getBuildingUnitsForPicker } from "@/app/actions/shop";
 import { RentApartmentButton } from "./RentApartmentButton";
 
-type Building = {
+type BuildingSummary = {
   id: string;
   buildingNumber: number;
-  units: {
-    id: string;
-    unitNumber: number;
-    residentId: string | null;
-    resident?: { username: string; displayName: string | null } | null;
-  }[];
+  vacantCount: number;
+  totalUnits: number;
+};
+
+type Unit = {
+  id: string;
+  unitNumber: number;
+  residentId: string | null;
+  resident?: { username: string; displayName: string | null } | null;
 };
 
 export function ApartmentPicker({
@@ -20,15 +24,33 @@ export function ApartmentPicker({
   canRent,
   username,
 }: {
-  buildings: Building[];
+  buildings: BuildingSummary[];
   canRent: boolean;
   username?: string;
 }) {
   const [buildingId, setBuildingId] = useState(buildings[0]?.id ?? "");
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [loading, setLoading] = useState(false);
   const building = buildings.find((b) => b.id === buildingId);
-  const vacantUnits = building?.units.filter((u) => !u.residentId) ?? [];
-  const occupiedUnits = building?.units.filter((u) => u.residentId) ?? [];
-  const [unitId, setUnitId] = useState(vacantUnits[0]?.id ?? "");
+  const vacantUnits = units.filter((u) => !u.residentId);
+  const occupiedUnits = units.filter((u) => u.residentId);
+  const [unitId, setUnitId] = useState("");
+
+  useEffect(() => {
+    if (!buildingId) return;
+    let cancelled = false;
+    setLoading(true);
+    getBuildingUnitsForPicker(buildingId).then((data) => {
+      if (cancelled) return;
+      setUnits(data);
+      const first = data.find((u) => !u.residentId);
+      setUnitId(first?.id ?? "");
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [buildingId]);
 
   if (!canRent) {
     return (
@@ -49,18 +71,12 @@ export function ApartmentPicker({
           楼栋
           <select
             value={buildingId}
-            onChange={(e) => {
-              setBuildingId(e.target.value);
-              const b = buildings.find((x) => x.id === e.target.value);
-              const first = b?.units.find((u) => !u.residentId);
-              setUnitId(first?.id ?? "");
-            }}
+            onChange={(e) => setBuildingId(e.target.value)}
             className="ml-2 rounded border border-stone-300 px-2 py-1"
           >
             {buildings.map((b) => (
               <option key={b.id} value={b.id}>
-                {b.buildingNumber} 号楼（空位{" "}
-                {b.units.filter((u) => !u.residentId).length}）
+                {b.buildingNumber} 号楼（空位 {b.vacantCount}）
               </option>
             ))}
           </select>
@@ -72,8 +88,11 @@ export function ApartmentPicker({
             value={unitId}
             onChange={(e) => setUnitId(e.target.value)}
             className="ml-2 rounded border border-stone-300 px-2 py-1"
+            disabled={loading}
           >
-            {vacantUnits.length === 0 ? (
+            {loading ? (
+              <option value="">加载中…</option>
+            ) : vacantUnits.length === 0 ? (
               <option value="">已满</option>
             ) : (
               vacantUnits.slice(0, 50).map((u) => (

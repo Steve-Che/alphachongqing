@@ -1,14 +1,7 @@
 import Link from "next/link";
-import { auth, signOut } from "@/lib/auth";
-import { getUserResidence } from "@/lib/queries";
-import { Button } from "@/components/ui/button";
+import { HeaderUserNav } from "@/components/layout/HeaderUserNav";
 
-export async function Header() {
-  const session = await auth();
-  const residence = session?.user?.id
-    ? await getUserResidence(session.user.id)
-    : null;
-
+export function Header() {
   return (
     <header className="border-b border-stone-200 bg-[#f7f4ef]">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
@@ -22,67 +15,7 @@ export async function Header() {
           <Link href="/guide" className="hover:text-stone-900">
             入驻指南
           </Link>
-          {session?.user ? (
-            <>
-              {residence?.shop && (
-                <Link href={`/shop/${residence.shop.slug}`} className="text-accent hover:underline">
-                  我的店铺
-                </Link>
-              )}
-              {residence?.apartmentUnit && (
-                <Link
-                  href={`/apartment/${residence.apartmentUnit.id}`}
-                  className="text-accent hover:underline"
-                >
-                  我的公寓
-                </Link>
-              )}
-              {!residence?.shop && !residence?.apartmentUnit && (
-                <Link href="/guide" className="text-amber-700 hover:underline">
-                  选地盘
-                </Link>
-              )}
-              <Link href="/write/article" className="hover:text-stone-900">
-                写长文
-              </Link>
-              <Link href="/write/moment" className="hover:text-stone-900">
-                发短文
-              </Link>
-              <Link
-                href={`/u/${session.user.username}`}
-                className="hover:text-stone-900"
-              >
-                我的主页
-              </Link>
-              {session.user.role === "ADMIN" && (
-                <Link href="/admin/invites" className="hover:text-stone-900">
-                  邀请码
-                </Link>
-              )}
-              <form
-                action={async () => {
-                  "use server";
-                  await signOut({ redirectTo: "/" });
-                }}
-              >
-                <Button type="submit" variant="ghost" size="sm">
-                  退出
-                </Button>
-              </form>
-            </>
-          ) : (
-            <>
-              <Link href="/login" className="hover:text-stone-900">
-                登录
-              </Link>
-              <Link
-                href="/register"
-                className="rounded bg-stone-800 px-3 py-1 text-white hover:bg-stone-700"
-              >
-                邀请码注册
-              </Link>
-            </>
-          )}
+          <HeaderUserNav />
         </nav>
       </div>
     </header>

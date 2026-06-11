@@ -6,12 +6,27 @@ import { createMoment } from "@/app/actions/posts";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-export function MomentComposer({ streetId }: { streetId?: string }) {
+type StreetOption = {
+  id: string;
+  nameZh: string;
+  district: { nameZh: string };
+};
+
+export function MomentComposer({
+  defaultStreetId,
+  defaultStreetName,
+  streets,
+}: {
+  defaultStreetId?: string;
+  defaultStreetName?: string;
+  streets?: StreetOption[];
+}) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [streetId, setStreetId] = useState(defaultStreetId ?? "");
 
   async function uploadImage(file: File) {
     setUploading(true);
@@ -32,7 +47,7 @@ export function MomentComposer({ streetId }: { streetId?: string }) {
     const result = await createMoment({
       body: fd.get("body") as string,
       imageUrls: images,
-      streetId,
+      streetId: streetId || undefined,
     });
     if (result.ok) {
       e.currentTarget.reset();
@@ -47,6 +62,26 @@ export function MomentComposer({ streetId }: { streetId?: string }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3 rounded border border-stone-200 bg-paper p-4">
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {streets && streets.length > 0 && (
+        <label className="block text-sm text-stone-600">
+          发布到街道
+          <select
+            value={streetId}
+            onChange={(e) => setStreetId(e.target.value)}
+            className="ml-2 rounded border border-stone-300 px-2 py-1"
+          >
+            <option value="">不关联街道</option>
+            {streets.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.district.nameZh} · {s.nameZh}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {defaultStreetName && streetId === defaultStreetId && (
+        <p className="text-xs text-stone-500">将发布到：{defaultStreetName}</p>
+      )}
       <Textarea
         name="body"
         placeholder="写一条短文，像早期的微博那样…（不超过 500 字）"

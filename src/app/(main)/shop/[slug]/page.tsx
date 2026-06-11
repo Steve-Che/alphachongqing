@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getShopBySlug } from "@/lib/queries";
+import { MessageWithReplies } from "@/components/social/MessageWithReplies";
 import { RoomFloorPlan } from "@/components/shop/RoomFloorPlan";
 import { GuestbookForm } from "@/components/shop/GuestbookForm";
-import { formatDate } from "@/lib/utils";
 import { roomTypeToSlug } from "@/lib/rooms";
 import { encodeRouteSlug } from "@/lib/route-slug";
 
@@ -24,10 +24,26 @@ export default async function ShopPage({
     where: { shopId: shop.id },
     orderBy: { createdAt: "desc" },
     take: 20,
-    include: { author: true },
+    include: {
+      author: { select: { id: true, username: true, displayName: true } },
+      comments: {
+        where: { parentId: null },
+        orderBy: { createdAt: "asc" },
+        include: {
+          author: { select: { id: true, username: true, displayName: true } },
+          replies: {
+            orderBy: { createdAt: "asc" },
+            include: {
+              author: { select: { id: true, username: true, displayName: true } },
+            },
+          },
+        },
+      },
+    },
   });
 
   const isOwner = session?.user?.id === shop.owner.id;
+  const isAdmin = session?.user?.role === "ADMIN";
   const street = shop.shopSlot.street;
   const district = street.district;
   const frontRoom = shop.rooms.find((r) => r.roomType === "FRONT_HALL");
@@ -124,10 +140,16 @@ export default async function ShopPage({
         <ul className="mt-4 space-y-2">
           {guestbook.map((entry) => (
             <li key={entry.id} className="rounded border-l-2 border-stone-300 bg-paper px-4 py-2">
-              <p className="text-stone-800">{entry.content}</p>
-              <p className="mt-1 text-xs text-stone-400">
-                {entry.author.displayName ?? entry.author.username} · {formatDate(entry.createdAt)}
-              </p>
+              <MessageWithReplies
+                content={entry.content}
+                author={entry.author}
+                createdAt={entry.createdAt}
+                comments={entry.comments}
+                guestbookEntryId={entry.id}
+                currentUserId={session?.user?.id}
+                isAdmin={isAdmin}
+                canReply={!!session?.user}
+              />
             </li>
           ))}
           {guestbook.length === 0 && (

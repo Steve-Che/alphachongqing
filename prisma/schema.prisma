@@ -36,6 +36,12 @@ enum PostType {
   MOMENT
 }
 
+enum NotificationType {
+  COMMENT
+  REPLY
+  FOLLOW
+}
+
 model User {
   id             String         @id @default(cuid())
   email          String         @unique
@@ -57,8 +63,25 @@ model User {
   guestbookEntries GuestbookEntry[]
   streetMessages StreetMessage[]
   passwordResetTokens PasswordResetToken[]
+  comments         Comment[]
+  following        Follow[]         @relation("Following")
+  followers        Follow[]         @relation("Followers")
+  notifications    Notification[]   @relation("Notifications")
+  notificationActs Notification[]   @relation("NotificationActors")
 
   @@index([username])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followingId])
 }
 
 model PasswordResetToken {
@@ -123,6 +146,7 @@ model Street {
   shopSlots          ShopSlot[]
   apartmentBuildings ApartmentBuilding[]
   streetMessages     StreetMessage[]
+  posts              Post[]
 
   @@index([districtId])
   @@index([slug])
@@ -235,11 +259,14 @@ model Post {
   updatedAt  DateTime @updatedAt
 
   author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  street       Street?       @relation(fields: [streetId], references: [id], onDelete: SetNull)
   images       ImageAsset[]
   roomContents RoomContent[]
+  comments     Comment[]
 
   @@index([authorId, type])
   @@index([createdAt])
+  @@index([streetId, createdAt])
 }
 
 model ImageAsset {
@@ -263,8 +290,9 @@ model GuestbookEntry {
   content   String
   createdAt DateTime @default(now())
 
-  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  shop   Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  shop     Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  comments Comment[]
 
   @@index([shopId])
 }
@@ -278,8 +306,49 @@ model StreetMessage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  street Street @relation(fields: [streetId], references: [id], onDelete: Cascade)
-  author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  street   Street    @relation(fields: [streetId], references: [id], onDelete: Cascade)
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments Comment[]
 
   @@index([streetId, createdAt])
+}
+
+model Comment {
+  id               String   @id @default(cuid())
+  authorId         String
+  body             String
+  parentId         String?
+  postId           String?
+  guestbookEntryId String?
+  streetMessageId  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  author         User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent         Comment?        @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies        Comment[]       @relation("CommentReplies")
+  post           Post?           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  guestbookEntry GuestbookEntry? @relation(fields: [guestbookEntryId], references: [id], onDelete: Cascade)
+  streetMessage  StreetMessage?  @relation(fields: [streetMessageId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@index([guestbookEntryId, createdAt])
+  @@index([streetMessageId, createdAt])
+  @@index([parentId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  actorId   String
+  href      String
+  body      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user  User @relation("Notifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor User @relation("NotificationActors", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
 }

@@ -6,6 +6,7 @@ import { DEFAULT_ROOM_NAMES, ROOM_ORDER } from "@/lib/chongqing/geo";
 import { slugify } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { rateLimitSocialAction } from "@/lib/rate-limit";
 import type { RoomType } from "@/generated/prisma/client";
 
 export type ActionResult<T = void> =
@@ -265,13 +266,23 @@ export async function addGuestbookEntry(
   const user = await getSessionUser();
   if (!user) return { ok: false, error: "请先登录" };
 
+  const limited = await rateLimitSocialAction("guestbook", user.id);
+  if (!limited.ok) return limited;
+
   const trimmed = content.trim();
   if (!trimmed) return { ok: false, error: "留言不能为空" };
+  if (trimmed.length > 500) return { ok: false, error: "留言不超过 500 字" };
+
+  const shop = await prisma.shop.findUnique({
+    where: { id: shopId },
+    select: { slug: true },
+  });
 
   await prisma.guestbookEntry.create({
     data: { shopId, authorId: user.id, content: trimmed },
   });
 
+  if (shop) revalidatePath(`/shop/${shop.slug}`);
   return { ok: true };
 }
 
@@ -282,8 +293,12 @@ export async function addStreetMessage(
   const user = await getSessionUser();
   if (!user) return { ok: false, error: "请先登录" };
 
+  const limited = await rateLimitSocialAction("street-message", user.id);
+  if (!limited.ok) return limited;
+
   const trimmed = content.trim();
   if (!trimmed) return { ok: false, error: "留言不能为空" };
+  if (trimmed.length > 500) return { ok: false, error: "留言不超过 500 字" };
 
   const street = await prisma.street.findUnique({
     where: { id: streetId },
@@ -304,6 +319,19 @@ export async function releaseResidenceAction(): Promise<void> {
     throw new Error(result.error);
   }
   redirect(`/u/${(await auth())?.user?.username ?? ""}`);
+}
+
+export async function getBuildingUnitsForPicker(buildingId: string) {
+  return prisma.apartmentUnit.findMany({
+    where: { buildingId },
+    select: {
+      id: true,
+      unitNumber: true,
+      residentId: true,
+      resident: { select: { username: true, displayName: true } },
+    },
+    orderBy: { unitNumber: "asc" },
+  });
 }
 
 export async function openShopAndRedirect(

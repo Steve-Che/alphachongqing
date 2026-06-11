@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getStreetBySlug, getUserResidence } from "@/lib/queries";
+import { getStreetBySlug, getStreetFeed, getUserResidence } from "@/lib/queries";
+import { StreetFeed } from "@/components/feed/StreetFeed";
+import { MessageWithReplies } from "@/components/social/MessageWithReplies";
 import { StreetViewLoader } from "@/components/map/StreetViewLoader";
 import { ShopSlotCard } from "@/components/shop/ShopSlotCard";
 import { ApartmentPicker } from "@/components/shop/ApartmentPicker";
 import { ResidenceBanner } from "@/components/residence/ResidenceBanner";
 import { StreetMessageForm } from "@/components/street/StreetMessageForm";
-import { formatDate } from "@/lib/utils";
 import { decodeRouteSlug } from "@/lib/route-slug";
 
 export const revalidate = 60;
@@ -29,6 +30,8 @@ export default async function StreetPage({
     ? await getUserResidence(session.user.id)
     : null;
   const canSettle = !!session?.user && !residence?.shop && !residence?.apartmentUnit;
+  const streetFeed = await getStreetFeed(street.id);
+  const isAdmin = session?.user?.role === "ADMIN";
 
   const shopSlots = street.shopSlots.filter((s) => !s.isCenter);
   const occupiedShops = shopSlots.filter((s) => s.status === "OCCUPIED").length;
@@ -135,6 +138,14 @@ export default async function StreetPage({
       </section>
 
       <section>
+        <h2 className="mb-4 font-serif text-lg font-semibold">本街动态</h2>
+        <p className="mb-3 text-sm text-stone-500">
+          本街短文、新开店与新入住，按时间聚合。
+        </p>
+        <StreetFeed items={streetFeed} />
+      </section>
+
+      <section>
         <h2 className="mb-4 font-serif text-lg font-semibold">街道留言</h2>
         {session?.user && <StreetMessageForm streetId={street.id} />}
         <ul className="mt-4 space-y-3">
@@ -143,10 +154,16 @@ export default async function StreetPage({
               key={msg.id}
               className="rounded border-l-2 border-accent bg-paper px-4 py-2"
             >
-              <p className="text-stone-800">{msg.content}</p>
-              <p className="mt-1 text-xs text-stone-400">
-                {msg.author.displayName ?? msg.author.username} · {formatDate(msg.createdAt)}
-              </p>
+              <MessageWithReplies
+                content={msg.content}
+                author={msg.author}
+                createdAt={msg.createdAt}
+                comments={msg.comments}
+                streetMessageId={msg.id}
+                currentUserId={session?.user?.id}
+                isAdmin={isAdmin}
+                canReply={!!session?.user}
+              />
             </li>
           ))}
           {street.streetMessages.length === 0 && (

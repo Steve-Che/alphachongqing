@@ -60,10 +60,10 @@ export function ArticleEditor() {
       body: editor.getHTML(),
       coverUrl: coverUrl || undefined,
     });
-    if (result.ok) {
-      router.push("/");
+    if (result.ok && result.data?.id) {
+      router.push(`/article/${result.data.id}`);
       router.refresh();
-    } else {
+    } else if (!result.ok) {
       setError(result.error);
       setLoading(false);
     }

@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPostById } from "@/lib/queries";
+import { auth } from "@/lib/auth";
+import { getPostById, getPostComments } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize-html";
+import { AuthorLink } from "@/components/social/AuthorLink";
+import { CommentForm } from "@/components/social/CommentForm";
+import { CommentThread } from "@/components/social/CommentThread";
+import { PostImage } from "@/components/ui/post-image";
 
 export const revalidate = 60;
 
@@ -12,17 +17,21 @@ export default async function ArticlePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const post = await getPostById(id);
+  const [post, session, comments] = await Promise.all([
+    getPostById(id),
+    auth(),
+    getPostComments(id),
+  ]);
   if (!post || post.type !== "ARTICLE") notFound();
+
+  const isAdmin = session?.user?.role === "ADMIN";
 
   return (
     <article className="mx-auto max-w-prose">
       <nav className="mb-6 text-sm text-stone-500">
         <Link href="/" className="hover:text-stone-800">城市地图</Link>
         <span className="mx-2">/</span>
-        <Link href={`/u/${post.author.username}`} className="hover:text-stone-800">
-          {post.author.displayName ?? post.author.username}
-        </Link>
+        <AuthorLink author={post.author} className="hover:text-stone-800" />
       </nav>
 
       <header>
@@ -30,17 +39,17 @@ export default async function ArticlePage({
           {post.title}
         </h1>
         <p className="mt-3 text-sm text-stone-500">
-          <Link href={`/u/${post.author.username}`} className="hover:text-accent">
-            {post.author.displayName ?? post.author.username}
-          </Link>
+          <AuthorLink author={post.author} className="hover:text-accent" />
           {" · "}
           {formatDate(post.createdAt)}
         </p>
         {post.coverUrl && (
-          <img
+          <PostImage
             src={post.coverUrl}
             alt=""
             className="mt-6 w-full rounded-lg object-cover"
+            width={800}
+            height={450}
           />
         )}
       </header>
@@ -49,6 +58,26 @@ export default async function ArticlePage({
         className="prose-retro mt-8 text-stone-800"
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.body) }}
       />
+
+      <section className="mt-12 border-t border-stone-200 pt-8">
+        <h2 className="mb-4 font-serif text-lg font-semibold">评论</h2>
+        {session?.user ? (
+          <CommentForm postId={post.id} placeholder="写下你的评论…" />
+        ) : (
+          <p className="mb-4 text-sm text-stone-500">
+            <Link href="/login" className="text-accent hover:underline">登录</Link> 后发表评论
+          </p>
+        )}
+        <div className="mt-6">
+          <CommentThread
+            comments={comments}
+            postId={post.id}
+            currentUserId={session?.user?.id}
+            isAdmin={isAdmin}
+            canReply={!!session?.user}
+          />
+        </div>
+      </section>
     </article>
   );
 }
