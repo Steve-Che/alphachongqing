@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createMoment } from "@/app/actions/posts";
+import { uploadImage } from "@/lib/upload-client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -29,15 +30,13 @@ export function MomentComposer({
   const [uploading, setUploading] = useState(false);
   const [streetId, setStreetId] = useState(defaultStreetId ?? "");
 
-  async function uploadImage(file: File) {
+  async function handleImageUpload(file: File) {
     setUploading(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    const data = await res.json();
+    setError("");
+    const result = await uploadImage(file, "content");
     setUploading(false);
-    if (data.url) setImages((prev) => [...prev, data.url].slice(0, 9));
-    else setError(data.error || "上传失败");
+    if (result.ok) setImages((prev) => [...prev, result.url].slice(0, 9));
+    else setError(result.error);
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -110,7 +109,7 @@ export function MomentComposer({
             disabled={uploading || images.length >= 9}
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) uploadImage(f);
+              if (f) handleImageUpload(f);
             }}
           />
           {uploading ? "上传中…" : "添加图片"}

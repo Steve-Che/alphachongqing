@@ -8,6 +8,7 @@ import { Avatar } from "@/components/social/Avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadImage } from "@/lib/upload-client";
 
 export function ProfileSettingsForm({
   user,
@@ -29,13 +30,10 @@ export function ProfileSettingsForm({
 
   async function handleAvatarUpload(file: File) {
     setUploading(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    const data = await res.json();
+    const result = await uploadImage(file, "avatar");
     setUploading(false);
-    if (data.url) setAvatarUrl(data.url);
-    else toast.error(data.error || "上传失败");
+    if (result.ok) setAvatarUrl(result.url);
+    else toast.error(result.error);
   }
 
   async function handleSubmit(e: React.FormEvent) {

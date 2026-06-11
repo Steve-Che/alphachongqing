@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { createArticle, updateArticle } from "@/app/actions/posts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { uploadImage } from "@/lib/upload-client";
 
 export function ArticleEditor({
   postId,
@@ -60,11 +61,9 @@ export function ArticleEditor({
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file || !editor) return;
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (data.url) editor.chain().focus().setImage({ src: data.url }).run();
+      const result = await uploadImage(file, "content");
+      if (result.ok) editor.chain().focus().setImage({ src: result.url }).run();
+      else toast.error(result.error);
     };
     input.click();
   }
