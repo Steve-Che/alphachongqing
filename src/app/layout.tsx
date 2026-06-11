@@ -18,7 +18,7 @@ const notoSerif = Noto_Serif_SC({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: siteName,
-  description: "一座致敬阿尔法城的 3D 虚拟城市社交平台",
+  description: "选街落脚，以长文与短文记录山城生活的三维虚拟社区",
 };
 
 export default function RootLayout({

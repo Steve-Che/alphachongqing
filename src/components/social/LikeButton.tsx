@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Heart } from "lucide-react";
 import { toggleLike } from "@/app/actions/social";
 import { dispatchNotificationsUpdated } from "@/lib/notification-events";
 import { toast } from "sonner";
+import { Icon } from "@/components/ui/icon";
+import { cn } from "@/lib/utils";
 
 export function LikeButton({
   postId,
@@ -44,9 +47,18 @@ export function LikeButton({
       onClick={handleClick}
       disabled={loading}
       aria-label={liked ? "取消点赞" : "点赞"}
-      className={`text-xs ${liked ? "text-red-600" : "text-stone-400 hover:text-stone-600"}`}
+      aria-pressed={liked}
+      className={cn(
+        "inline-flex items-center gap-1 text-xs",
+        liked ? "text-red-600" : "text-stone-400 hover:text-stone-600",
+      )}
     >
-      {liked ? "♥" : "♡"} {count > 0 ? count : ""}
+      <Icon
+        icon={Heart}
+        size={16}
+        className={cn(liked && "fill-current")}
+      />
+      {count > 0 ? count : null}
     </button>
   );
 }

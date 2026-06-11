@@ -4,7 +4,7 @@ export const MANUAL_CONTENT: Record<string, ManualChapterContent> = {
   overview: {
     slug: "overview",
     intro:
-      "阿尔法重庆是一座致敬豆瓣阿尔法城的虚拟山城：以文字与图片为主，没有短视频。任何人可浏览地图与店铺；入驻、写作与社交互动需邀请码注册后登录。",
+      "阿尔法重庆是一座虚拟山城社区：以文字与图片为主，没有短视频。任何人可浏览地图与店铺；入驻、写作与社交互动需邀请码注册后登录。",
     sections: [
       {
         title: "六个城区",

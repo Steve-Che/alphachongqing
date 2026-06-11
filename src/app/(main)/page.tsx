@@ -29,7 +29,7 @@ export default async function HomePage() {
         </h1>
         <p className="mt-2 max-w-2xl text-stone-600">
           一座虚拟的山城。在三维地图上缩放漫游，从城区下钻到街道与铺面，
-          选地盘开店或入住公寓，写下长文与短文——像古早互联网那样。
+          在地图上落脚，写下长文与短文，慢慢认识邻居。
         </p>
         <dl className="mt-4 flex flex-wrap gap-6 text-sm text-stone-500">
           <div>

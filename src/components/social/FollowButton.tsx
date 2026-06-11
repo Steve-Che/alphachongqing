@@ -58,6 +58,8 @@ export function FollowButton({
       variant={following ? "outline" : "default"}
       onClick={handleClick}
       disabled={loading}
+      aria-pressed={following}
+      aria-label={label}
     >
       {label}
     </Button>

@@ -3,12 +3,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getMomentById, getPostComments, getPostLikeState } from "@/lib/queries";
-import { formatDate } from "@/lib/utils";
+import { FormattedTime } from "@/components/ui/formatted-time";
 import { siteName, siteUrl } from "@/lib/site";
 import { AuthorLink } from "@/components/social/AuthorLink";
 import { PostImage } from "@/components/ui/post-image";
 import { LikeButton } from "@/components/social/LikeButton";
-import { CommentForm } from "@/components/social/CommentForm";
 import { PostCommentSection } from "@/components/social/PostCommentSection";
 import { ShareButton } from "@/components/social/ShareButton";
 import { encodeRouteSlug } from "@/lib/route-slug";
@@ -76,7 +75,7 @@ export default async function MomentPage({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
             <AuthorLink author={post.author} showAvatar className="font-medium text-stone-800" />
-            <span>· {formatDate(post.createdAt)}</span>
+            <span>· <FormattedTime date={post.createdAt} /></span>
           </div>
           <ShareButton title="阿尔法重庆短文" url={`/moment/${post.id}`} />
         </div>
@@ -106,9 +105,7 @@ export default async function MomentPage({
 
       <section id="comments" className="rounded border border-stone-200 bg-paper p-5">
         <h2 className="mb-4 font-serif text-lg font-semibold">评论</h2>
-        {session?.user ? (
-          <CommentForm postId={post.id} placeholder="写下你的评论…" />
-        ) : (
+        {!session?.user && (
           <p className="mb-4 text-sm text-stone-500">
             <Link href={`/login?callbackUrl=/moment/${post.id}`} className="text-accent hover:underline">
               登录
@@ -116,16 +113,24 @@ export default async function MomentPage({
             后发表评论
           </p>
         )}
-        <div className="mt-6">
-          <PostCommentSection
-            postId={post.id}
-            initialComments={commentResult.items}
-            initialCursor={commentResult.nextCursor}
-            currentUserId={session?.user?.id}
-            isAdmin={isAdmin}
-            canReply={!!session?.user}
-          />
-        </div>
+        <PostCommentSection
+          postId={post.id}
+          initialComments={commentResult.items}
+          initialCursor={commentResult.nextCursor}
+          currentUserId={session?.user?.id}
+          currentUser={
+            session?.user?.id && session.user.username
+              ? {
+                  id: session.user.id,
+                  username: session.user.username,
+                  displayName: session.user.name ?? null,
+                }
+              : undefined
+          }
+          isAdmin={isAdmin}
+          canReply={!!session?.user}
+          showComposeForm={!!session?.user}
+        />
       </section>
     </article>
   );

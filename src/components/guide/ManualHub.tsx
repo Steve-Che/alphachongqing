@@ -12,7 +12,7 @@ export function ManualHub({ chapters }: Props) {
       <header>
         <h1 className="font-serif text-3xl font-semibold">街坊手册</h1>
         <p className="mt-3 text-stone-600 leading-relaxed">
-          阿尔法重庆致敬豆瓣阿尔法城：任何人可浏览地图与店铺；入驻、写作与社交需
+          阿尔法重庆是一座虚拟山城社区：任何人可浏览地图与店铺；入驻、写作与社交需
           <Link href="/register" className="text-accent hover:underline">
             邀请码注册
           </Link>

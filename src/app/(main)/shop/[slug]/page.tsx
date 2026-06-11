@@ -93,7 +93,7 @@ export default async function ShopPage({
 
       <section>
         <h2 className="mb-3 font-serif text-lg font-semibold">店铺平面图</h2>
-        <p className="mb-3 text-sm text-stone-500">点击房间进入。六间房致敬阿尔法城小店结构。</p>
+        <p className="mb-3 text-sm text-stone-500">点击房间进入。六间房间，按你的方式布置小店。</p>
         <RoomFloorPlan shopSlug={shop.slug} rooms={shop.rooms} />
       </section>
 

@@ -5,6 +5,35 @@ import { Button } from "@/components/ui/button";
 
 type LoadResult<T> = { items: T[]; nextCursor: string | null };
 
+export function LoadMoreFooter({
+  hasMore,
+  loading,
+  onLoadMore,
+  label = "加载更多",
+}: {
+  hasMore: boolean;
+  loading: boolean;
+  onLoadMore: () => void | Promise<void>;
+  label?: string;
+}) {
+  if (!hasMore) return null;
+
+  return (
+    <div className="mt-4 text-center">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={loading}
+        aria-busy={loading}
+        onClick={onLoadMore}
+      >
+        {loading ? "加载中…" : label}
+      </Button>
+    </div>
+  );
+}
+
 export function LoadMoreButton<T extends { id: string }>({
   initialItems,
   initialCursor,
@@ -31,25 +60,18 @@ export function LoadMoreButton<T extends { id: string }>({
   return (
     <div>
       <ul className={listClassName}>{items.map(renderItem)}</ul>
-      {cursor && (
-        <div className="mt-4 text-center">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={loading}
-            onClick={async () => {
-              setLoading(true);
-              const result = await loadMore(cursor);
-              setItems((prev) => [...prev, ...result.items]);
-              setCursor(result.nextCursor);
-              setLoading(false);
-            }}
-          >
-            {loading ? "加载中…" : "加载更多"}
-          </Button>
-        </div>
-      )}
+      <LoadMoreFooter
+        hasMore={!!cursor}
+        loading={loading}
+        onLoadMore={async () => {
+          if (!cursor) return;
+          setLoading(true);
+          const result = await loadMore(cursor);
+          setItems((prev) => [...prev, ...result.items]);
+          setCursor(result.nextCursor);
+          setLoading(false);
+        }}
+      />
     </div>
   );
 }

@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { deleteComment } from "@/app/actions/social";
 
-export function DeleteCommentButton({ commentId }: { commentId: string }) {
+export function DeleteCommentButton({
+  commentId,
+  onDeleted,
+}: {
+  commentId: string;
+  onDeleted?: (commentId: string) => void;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -15,7 +21,11 @@ export function DeleteCommentButton({ commentId }: { commentId: string }) {
     const result = await deleteComment(commentId);
     if (result.ok) {
       toast.success("评论已删除");
-      router.refresh();
+      if (onDeleted) {
+        onDeleted(commentId);
+      } else {
+        router.refresh();
+      }
     } else {
       toast.error(result.error);
     }

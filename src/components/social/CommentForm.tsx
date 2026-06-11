@@ -15,6 +15,7 @@ export function CommentForm({
   parentId,
   placeholder = "写下评论…",
   compact = false,
+  onSuccess,
 }: {
   postId?: string;
   guestbookEntryId?: string;
@@ -22,6 +23,7 @@ export function CommentForm({
   parentId?: string;
   placeholder?: string;
   compact?: boolean;
+  onSuccess?: (data: { id: string; body: string; parentId?: string | null }) => void;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -32,8 +34,9 @@ export function CommentForm({
     setLoading(true);
     setError("");
     const fd = new FormData(e.currentTarget);
+    const body = fd.get("body") as string;
     const result = await addComment({
-      body: fd.get("body") as string,
+      body,
       postId,
       guestbookEntryId,
       streetMessageId,
@@ -43,7 +46,11 @@ export function CommentForm({
       e.currentTarget.reset();
       toast.success(parentId ? "回复已发送" : "评论已发表");
       dispatchNotificationsUpdated();
-      router.refresh();
+      if (onSuccess && result.data) {
+        onSuccess({ id: result.data.id, body: body.trim(), parentId: parentId ?? null });
+      } else {
+        router.refresh();
+      }
     } else {
       setError(result.error);
     }
@@ -58,6 +65,7 @@ export function CommentForm({
       <Textarea
         name="body"
         placeholder={placeholder}
+        aria-label={parentId ? "回复内容" : "评论内容"}
         required
         rows={compact ? 2 : 3}
         maxLength={500}

@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Icon } from "@/components/ui/icon";
 
 type OnboardingStats = {
   hasResidence: boolean;
@@ -78,8 +80,12 @@ export function WelcomeBanner() {
       <ol className="mt-3 list-inside list-decimal space-y-1 text-sm text-stone-700">
         {steps.map((step, i) => (
           <li key={i} className={step.done ? "text-stone-400 line-through" : ""}>
-            {step.label}
-            {step.done && " ✓"}
+            <span className="inline-flex items-center gap-1">
+              {step.label}
+              {step.done && (
+                <Icon icon={Check} size={14} className="text-stone-400" />
+              )}
+            </span>
           </li>
         ))}
       </ol>

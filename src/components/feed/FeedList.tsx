@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { PostList } from "@/components/feed/PostList";
-import { Button } from "@/components/ui/button";
+import { LoadMoreFooter } from "@/components/ui/load-more-button";
 import { loadMoreFollowingFeed } from "@/app/actions/social";
 
 type FeedPost = Parameters<typeof PostList>[0]["posts"][number];
@@ -28,32 +28,25 @@ export function FeedList({
   return (
     <div>
       <PostList posts={posts} likedPostIds={likedSet} />
-      {cursor && (
-        <div className="mt-4 text-center">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={loading}
-            onClick={async () => {
-              setLoading(true);
-              const result = await loadMoreFollowingFeed(cursor);
-              setPosts((prev) => [...prev, ...result.items]);
-              setCursor(result.nextCursor);
-              if (result.likedPostIds?.length) {
-                setLikedSet((prev) => {
-                  const next = new Set(prev);
-                  for (const id of result.likedPostIds) next.add(id);
-                  return next;
-                });
-              }
-              setLoading(false);
-            }}
-          >
-            {loading ? "加载中…" : "加载更多"}
-          </Button>
-        </div>
-      )}
+      <LoadMoreFooter
+        hasMore={!!cursor}
+        loading={loading}
+        onLoadMore={async () => {
+          if (!cursor) return;
+          setLoading(true);
+          const result = await loadMoreFollowingFeed(cursor);
+          setPosts((prev) => [...prev, ...result.items]);
+          setCursor(result.nextCursor);
+          if (result.likedPostIds?.length) {
+            setLikedSet((prev) => {
+              const next = new Set(prev);
+              for (const id of result.likedPostIds) next.add(id);
+              return next;
+            });
+          }
+          setLoading(false);
+        }}
+      />
     </div>
   );
 }

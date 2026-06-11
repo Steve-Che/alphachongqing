@@ -1,15 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
+import { cn } from "@/lib/utils";
 
 export function ShareButton({
   title,
   url,
+  compact = false,
 }: {
   title: string;
   url: string;
+  compact?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -39,6 +44,23 @@ export function ShareButton({
     setLoading(false);
   }
 
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={handleShare}
+        disabled={loading}
+        aria-label="分享"
+        className={cn(
+          "inline-flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600",
+        )}
+      >
+        <Icon icon={Share2} size={14} />
+        分享
+      </button>
+    );
+  }
+
   return (
     <Button
       type="button"
@@ -48,6 +70,7 @@ export function ShareButton({
       disabled={loading}
       aria-label="分享"
     >
+      <Icon icon={Share2} size={14} className="mr-1" />
       {loading ? "…" : "分享"}
     </Button>
   );

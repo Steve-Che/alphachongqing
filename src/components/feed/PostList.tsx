@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { formatDate } from "@/lib/utils";
+import { MessageCircle } from "lucide-react";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import { AuthorLink } from "@/components/social/AuthorLink";
 import { PostImage } from "@/components/ui/post-image";
 import { DeletePostButton } from "@/components/feed/DeletePostButton";
 import { LikeButton } from "@/components/social/LikeButton";
+import { ShareButton } from "@/components/social/ShareButton";
+import { FormattedTime } from "@/components/ui/formatted-time";
+import { Icon } from "@/components/ui/icon";
 import { encodeRouteSlug } from "@/lib/route-slug";
 
 type Post = {
@@ -55,7 +58,7 @@ export function PostList({
               {post.author && (
                 <AuthorLink author={post.author} showAvatar className="hover:text-accent" />
               )}
-              <time>{formatDate(post.createdAt)}</time>
+              <FormattedTime date={post.createdAt} />
               {showDelete && <DeletePostButton postId={post.id} />}
             </p>
             {post.coverUrl && (
@@ -75,6 +78,17 @@ export function PostList({
                 ),
               }}
             />
+            <div className="mt-3">
+              <Link
+                href={`/article/${post.id}#comments`}
+                className="inline-flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600"
+              >
+                <Icon icon={MessageCircle} size={14} />
+                {(post._count?.comments ?? 0) > 0
+                  ? `${post._count?.comments} 条评论`
+                  : "评论"}
+              </Link>
+            </div>
           </article>
         ) : (
           <article key={post.id} className="moment-card rounded-r px-4 py-3">
@@ -82,7 +96,7 @@ export function PostList({
               {post.author && (
                 <AuthorLink author={post.author} showAvatar className="hover:text-accent" />
               )}
-              <time>{formatDate(post.createdAt)}</time>
+              <FormattedTime date={post.createdAt} />
               {post.street && (
                 <Link
                   href={`/street/${encodeRouteSlug(post.street.slug)}`}
@@ -117,14 +131,20 @@ export function PostList({
                 initialLiked={likedPostIds?.has(post.id) ?? false}
                 initialCount={post._count?.likes ?? 0}
               />
-              {(post._count?.comments ?? 0) > 0 && (
-                <Link
-                  href={`/moment/${post.id}#comments`}
-                  className="text-xs text-stone-400 hover:text-stone-600"
-                >
-                  {post._count?.comments} 条评论
-                </Link>
-              )}
+              <Link
+                href={`/moment/${post.id}#comments`}
+                className="inline-flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600"
+              >
+                <Icon icon={MessageCircle} size={14} />
+                {(post._count?.comments ?? 0) > 0
+                  ? `${post._count?.comments} 条评论`
+                  : "评论"}
+              </Link>
+              <ShareButton
+                title="阿尔法重庆短文"
+                url={`/moment/${post.id}`}
+                compact
+              />
             </div>
           </article>
         ),

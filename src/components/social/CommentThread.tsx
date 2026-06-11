@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { formatDate } from "@/lib/utils";
 import { AuthorLink } from "@/components/social/AuthorLink";
 import { CommentForm } from "@/components/social/CommentForm";
 import { DeleteCommentButton } from "@/components/social/DeleteCommentButton";
+import { FormattedTime } from "@/components/ui/formatted-time";
 
 export type CommentData = {
   id: string;
@@ -25,16 +25,26 @@ export function CommentThread({
   guestbookEntryId,
   streetMessageId,
   currentUserId,
+  currentUser,
   isAdmin,
   canReply,
+  onCommentAdded,
+  onCommentDeleted,
 }: {
   comments: CommentData[];
   postId?: string;
   guestbookEntryId?: string;
   streetMessageId?: string;
   currentUserId?: string;
+  currentUser?: { id: string; username: string; displayName: string | null };
   isAdmin?: boolean;
   canReply?: boolean;
+  onCommentAdded?: (data: {
+    id: string;
+    body: string;
+    parentId?: string | null;
+  }) => void;
+  onCommentDeleted?: (commentId: string) => void;
 }) {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
@@ -49,9 +59,12 @@ export function CommentThread({
           <p className="text-stone-800">{comment.body}</p>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-stone-400">
             <AuthorLink author={comment.author} className="text-stone-500 hover:text-accent" />
-            <span>· {formatDate(comment.createdAt)}</span>
+            <span>· <FormattedTime date={comment.createdAt} /></span>
             {(comment.author.id === currentUserId || isAdmin) && (
-              <DeleteCommentButton commentId={comment.id} />
+              <DeleteCommentButton
+                commentId={comment.id}
+                onDeleted={onCommentDeleted}
+              />
             )}
             {canReply && (
               <button
@@ -76,9 +89,12 @@ export function CommentThread({
                       author={reply.author}
                       className="text-stone-500 hover:text-accent"
                     />
-                    <span>· {formatDate(reply.createdAt)}</span>
+                    <span>· <FormattedTime date={reply.createdAt} /></span>
                     {(reply.author.id === currentUserId || isAdmin) && (
-                      <DeleteCommentButton commentId={reply.id} />
+                      <DeleteCommentButton
+                        commentId={reply.id}
+                        onDeleted={onCommentDeleted}
+                      />
                     )}
                   </p>
                 </li>
@@ -86,7 +102,7 @@ export function CommentThread({
             </ul>
           )}
 
-          {canReply && replyingTo === comment.id && (
+          {canReply && replyingTo === comment.id && currentUser && (
             <CommentForm
               postId={postId}
               guestbookEntryId={guestbookEntryId}
@@ -94,6 +110,10 @@ export function CommentThread({
               parentId={comment.id}
               placeholder="回复…"
               compact
+              onSuccess={(data) => {
+                onCommentAdded?.(data);
+                setReplyingTo(null);
+              }}
             />
           )}
         </li>

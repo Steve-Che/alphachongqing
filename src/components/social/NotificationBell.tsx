@@ -1,53 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { NOTIFICATIONS_UPDATED } from "@/lib/notification-events";
+import { Bell } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
+import { useUnreadNotificationCount } from "@/hooks/use-unread-notification-count";
+import { NotificationBadge } from "@/components/social/NotificationBadge";
 
 export function NotificationBell() {
-  const [unread, setUnread] = useState(0);
-
-  async function fetchUnread() {
-    try {
-      const res = await fetch("/api/notifications/unread-count");
-      if (!res.ok) return;
-      const data = await res.json();
-      setUnread(data.count ?? 0);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  useEffect(() => {
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 60_000);
-    const onUpdate = (e: Event) => {
-      const detail = (e as CustomEvent<{ count?: number }>).detail;
-      if (typeof detail?.count === "number") {
-        setUnread(detail.count);
-      } else {
-        fetchUnread();
-      }
-    };
-    window.addEventListener(NOTIFICATIONS_UPDATED, onUpdate);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener(NOTIFICATIONS_UPDATED, onUpdate);
-    };
-  }, []);
+  const unread = useUnreadNotificationCount();
 
   return (
     <Link
       href="/notifications"
       className="relative inline-flex items-center hover:text-stone-900"
-      aria-label="通知"
+      aria-label={unread > 0 ? `通知，${unread} 条未读` : "通知"}
     >
-      <span aria-hidden>🔔</span>
-      {unread > 0 && (
-        <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] text-white">
-          {unread > 99 ? "99+" : unread}
-        </span>
-      )}
+      <Icon icon={Bell} size={18} />
+      <NotificationBadge count={unread} />
     </Link>
   );
 }

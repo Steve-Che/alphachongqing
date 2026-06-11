@@ -16,7 +16,7 @@ export default async function LoginPage({
         进入阿尔法重庆
       </h1>
       <p className="mt-2 text-sm text-stone-500">
-        一座致敬豆瓣阿尔法城的虚拟城市
+        一座可以开店、入住、写字的虚拟山城
       </p>
       {reset === "1" && (
         <p className="mt-3 rounded bg-green-50 px-3 py-2 text-sm text-green-800">

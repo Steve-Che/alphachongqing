@@ -807,23 +807,35 @@ export async function getNotifications(
 }
 
 export async function getRecommendedUsers(take = 5) {
-  const recentShops = await prisma.shop.findMany({
-    orderBy: { createdAt: "desc" },
-    take,
-    select: {
-      owner: {
-        select: { id: true, username: true, displayName: true, avatarUrl: true },
+  const [recentShops, recentPosts] = await Promise.all([
+    prisma.shop.findMany({
+      orderBy: { createdAt: "desc" },
+      take,
+      select: {
+        owner: {
+          select: { id: true, username: true, displayName: true, avatarUrl: true },
+        },
       },
-    },
-  });
+    }),
+    prisma.post.findMany({
+      where: { published: true, type: "MOMENT" },
+      orderBy: { createdAt: "desc" },
+      take,
+      select: {
+        author: {
+          select: { id: true, username: true, displayName: true, avatarUrl: true },
+        },
+      },
+    }),
+  ]);
+
   const seen = new Set<string>();
-  return recentShops
-    .map((s) => s.owner)
-    .filter((u) => {
-      if (seen.has(u.id)) return false;
-      seen.add(u.id);
-      return true;
-    });
+  const merged = [...recentShops.map((s) => s.owner), ...recentPosts.map((p) => p.author)];
+  return merged.filter((u) => {
+    if (seen.has(u.id)) return false;
+    seen.add(u.id);
+    return true;
+  }).slice(0, take);
 }
 
 export async function getFollowCounts(userId: string) {
@@ -857,7 +869,7 @@ export async function searchContent(query: string, take = 20) {
         ],
       },
       take,
-      select: { username: true, displayName: true, avatarUrl: true, bio: true },
+      select: { id: true, username: true, displayName: true, avatarUrl: true, bio: true },
     }),
     prisma.post.findMany({
       where: {

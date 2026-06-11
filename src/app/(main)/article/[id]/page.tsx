@@ -3,11 +3,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getPostById, getPostComments } from "@/lib/queries";
-import { formatDate } from "@/lib/utils";
+import { FormattedTime } from "@/components/ui/formatted-time";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import { siteName, siteUrl } from "@/lib/site";
 import { AuthorLink } from "@/components/social/AuthorLink";
-import { CommentForm } from "@/components/social/CommentForm";
 import { PostCommentSection } from "@/components/social/PostCommentSection";
 import { PostImage } from "@/components/ui/post-image";
 import { ShareButton } from "@/components/social/ShareButton";
@@ -81,7 +80,7 @@ export default async function ArticlePage({
         <p className="mt-3 text-sm text-stone-500">
           <AuthorLink author={post.author} className="hover:text-accent" />
           {" · "}
-          {formatDate(post.createdAt)}
+          <FormattedTime date={post.createdAt} />
         </p>
         {post.coverUrl && (
           <PostImage
@@ -99,11 +98,9 @@ export default async function ArticlePage({
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.body) }}
       />
 
-      <section className="mt-12 border-t border-stone-200 pt-8">
+      <section id="comments" className="mt-12 border-t border-stone-200 pt-8">
         <h2 className="mb-4 font-serif text-lg font-semibold">评论</h2>
-        {session?.user ? (
-          <CommentForm postId={post.id} placeholder="写下你的评论…" />
-        ) : (
+        {!session?.user && (
           <p className="mb-4 text-sm text-stone-500">
             <Link href={`/login?callbackUrl=/article/${post.id}`} className="text-accent hover:underline">
               登录
@@ -111,16 +108,24 @@ export default async function ArticlePage({
             后发表评论
           </p>
         )}
-        <div className="mt-6">
-          <PostCommentSection
-            postId={post.id}
-            initialComments={commentResult.items}
-            initialCursor={commentResult.nextCursor}
-            currentUserId={session?.user?.id}
-            isAdmin={isAdmin}
-            canReply={!!session?.user}
-          />
-        </div>
+        <PostCommentSection
+          postId={post.id}
+          initialComments={commentResult.items}
+          initialCursor={commentResult.nextCursor}
+          currentUserId={session?.user?.id}
+          currentUser={
+            session?.user?.id && session.user.username
+              ? {
+                  id: session.user.id,
+                  username: session.user.username,
+                  displayName: session.user.name ?? null,
+                }
+              : undefined
+          }
+          isAdmin={isAdmin}
+          canReply={!!session?.user}
+          showComposeForm={!!session?.user}
+        />
       </section>
     </article>
   );

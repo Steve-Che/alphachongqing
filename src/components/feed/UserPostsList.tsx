@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { PostList } from "@/components/feed/PostList";
-import { Button } from "@/components/ui/button";
+import { LoadMoreFooter } from "@/components/ui/load-more-button";
 import { loadMoreUserPosts } from "@/app/actions/social";
 
 type Post = Parameters<typeof PostList>[0]["posts"][number];
@@ -33,25 +33,18 @@ export function UserPostsList({
   return (
     <div>
       <PostList posts={posts} showDelete={showDelete} />
-      {cursor && (
-        <div className="mt-4 text-center">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={loading}
-            onClick={async () => {
-              setLoading(true);
-              const result = await loadMoreUserPosts(username, cursor, postType);
-              setPosts((prev) => [...prev, ...result.items]);
-              setCursor(result.nextCursor);
-              setLoading(false);
-            }}
-          >
-            {loading ? "加载中…" : "加载更多"}
-          </Button>
-        </div>
-      )}
+      <LoadMoreFooter
+        hasMore={!!cursor}
+        loading={loading}
+        onLoadMore={async () => {
+          if (!cursor) return;
+          setLoading(true);
+          const result = await loadMoreUserPosts(username, cursor, postType);
+          setPosts((prev) => [...prev, ...result.items]);
+          setCursor(result.nextCursor);
+          setLoading(false);
+        }}
+      />
     </div>
   );
 }

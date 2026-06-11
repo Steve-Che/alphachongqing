@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AuthorLink } from "@/components/social/AuthorLink";
 import { FollowButton } from "@/components/social/FollowButton";
-import { Button } from "@/components/ui/button";
+import { LoadMoreFooter } from "@/components/ui/load-more-button";
 
 type UserRow = {
   id: string;
@@ -52,25 +52,18 @@ export function FollowList({
           </li>
         ))}
       </ul>
-      {cursor && (
-        <div className="mt-4 text-center">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={loading}
-            onClick={async () => {
-              setLoading(true);
-              const result = await loadMore(cursor);
-              setItems((prev) => [...prev, ...result.items]);
-              setCursor(result.nextCursor);
-              setLoading(false);
-            }}
-          >
-            {loading ? "加载中…" : "加载更多"}
-          </Button>
-        </div>
-      )}
+      <LoadMoreFooter
+        hasMore={!!cursor}
+        loading={loading}
+        onLoadMore={async () => {
+          if (!cursor) return;
+          setLoading(true);
+          const result = await loadMore(cursor);
+          setItems((prev) => [...prev, ...result.items]);
+          setCursor(result.nextCursor);
+          setLoading(false);
+        }}
+      />
     </div>
   );
 }
