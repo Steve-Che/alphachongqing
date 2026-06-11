@@ -14,8 +14,10 @@ const PREFIX_PUBLIC = [
   "/street/",
   "/shop/",
   "/article/",
+  "/moment/",
   "/u/",
   "/apartment/",
+  "/search",
   "/api/auth/",
   "/api/health",
 ];

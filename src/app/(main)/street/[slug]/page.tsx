@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getStreetBySlug, getStreetFeed, getUserResidence } from "@/lib/queries";
 import { StreetFeed } from "@/components/feed/StreetFeed";
+import { MomentComposer } from "@/components/feed/MomentComposer";
 import { MessageWithReplies } from "@/components/social/MessageWithReplies";
 import { StreetViewLoader } from "@/components/map/StreetViewLoader";
 import { ShopSlotCard } from "@/components/shop/ShopSlotCard";
@@ -142,6 +143,14 @@ export default async function StreetPage({
         <p className="mb-3 text-sm text-stone-500">
           本街短文、新开店与新入住，按时间聚合。
         </p>
+        {session?.user && (
+          <div className="mb-4">
+            <MomentComposer
+              defaultStreetId={street.id}
+              defaultStreetName={street.nameZh}
+            />
+          </div>
+        )}
         <StreetFeed items={streetFeed} />
       </section>
 

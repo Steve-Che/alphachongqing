@@ -1,19 +1,23 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getUserResidence } from "@/lib/queries";
+import { getUserResidence, getUserStats } from "@/lib/queries";
 
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ user: null, residence: null });
+    return NextResponse.json({ user: null, residence: null, stats: null });
   }
 
-  const residence = await getUserResidence(session.user.id);
+  const [residence, stats] = await Promise.all([
+    getUserResidence(session.user.id),
+    getUserStats(session.user.id),
+  ]);
 
   return NextResponse.json({
     user: {
       username: session.user.username,
       role: session.user.role,
+      displayName: session.user.name,
     },
     residence: residence
       ? {
@@ -23,5 +27,11 @@ export async function GET() {
             : undefined,
         }
       : null,
+    stats: {
+      hasResidence: stats.hasResidence,
+      postCount: stats.postCount,
+      followers: stats.followers,
+      following: stats.following,
+    },
   });
 }

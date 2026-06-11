@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { markAllNotificationsRead } from "@/app/actions/social";
+import { dispatchNotificationsUpdated } from "@/lib/notification-events";
 import { Button } from "@/components/ui/button";
 
 export function MarkAllReadButton() {
@@ -12,6 +13,7 @@ export function MarkAllReadButton() {
   async function handleClick() {
     setLoading(true);
     await markAllNotificationsRead();
+    dispatchNotificationsUpdated(0);
     router.refresh();
     setLoading(false);
   }

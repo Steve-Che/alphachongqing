@@ -49,7 +49,15 @@ export default async function HomePage() {
         <ResidenceBanner userId={session.user.id} />
       )}
 
-      <section>
+      {session?.user && (
+        <p className="text-sm text-stone-600">
+          <Link href="/feed" className="text-accent hover:underline">街坊动态</Link>
+          {" · "}
+          <Link href="/search" className="text-accent hover:underline">搜索街坊</Link>
+        </p>
+      )}
+
+      <section id="map">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-serif text-lg font-semibold">三维城市地图</h2>
           <Link href="/guide" className="text-sm text-accent hover:underline">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { addStreetMessage } from "@/app/actions/shop";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +20,7 @@ export function StreetMessageForm({ streetId }: { streetId: string }) {
     const result = await addStreetMessage(streetId, fd.get("content") as string);
     if (result.ok) {
       e.currentTarget.reset();
+      toast.success("街道留言已发布");
       router.refresh();
     } else {
       setError(result.error);

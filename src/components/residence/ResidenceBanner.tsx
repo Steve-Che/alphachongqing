@@ -19,12 +19,15 @@ export async function ResidenceBanner({ userId }: { userId: string }) {
             · {street.nameZh}
           </span>
         </p>
-        <div className="mt-2 flex gap-3 text-sm">
+        <div className="mt-2 flex flex-wrap gap-3 text-sm">
           <Link href={`/shop/${residence.shop.slug}`} className="text-accent hover:underline">
             管理店铺
           </Link>
           <Link href="/write/article" className="text-stone-600 hover:underline">
             写长文
+          </Link>
+          <Link href="/feed" className="text-stone-600 hover:underline">
+            街坊动态
           </Link>
         </div>
       </div>
@@ -40,7 +43,7 @@ export async function ResidenceBanner({ userId }: { userId: string }) {
         <p className="font-medium text-stone-900">
           {street.nameZh} · {building.buildingNumber} 号楼 {residence.apartmentUnit.unitNumber} 室
         </p>
-        <div className="mt-2 flex gap-3 text-sm">
+        <div className="mt-2 flex flex-wrap gap-3 text-sm">
           <Link
             href={`/apartment/${residence.apartmentUnit.id}`}
             className="text-accent hover:underline"
@@ -49,6 +52,9 @@ export async function ResidenceBanner({ userId }: { userId: string }) {
           </Link>
           <Link href="/write/moment" className="text-stone-600 hover:underline">
             发短文
+          </Link>
+          <Link href="/feed" className="text-stone-600 hover:underline">
+            街坊动态
           </Link>
         </div>
       </div>
@@ -61,9 +67,17 @@ export async function ResidenceBanner({ userId }: { userId: string }) {
       <p className="mt-1 text-sm text-stone-600">
         在地图上选一个区域 → 进入街道 → 开店或选公寓入住。每人限拥有一间店铺或一间公寓。
       </p>
-      <Link href="/guide" className="mt-2 inline-block text-sm text-accent hover:underline">
-        查看入驻指南 →
-      </Link>
+      <div className="mt-3 flex flex-wrap gap-3 text-sm">
+        <Link
+          href="/#map"
+          className="rounded bg-stone-800 px-3 py-1.5 text-white hover:bg-stone-700"
+        >
+          在地图上选街道
+        </Link>
+        <Link href="/guide" className="text-accent hover:underline">
+          查看入驻指南 →
+        </Link>
+      </div>
     </div>
   );
 }

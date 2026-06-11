@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { ResidenceBanner } from "@/components/residence/ResidenceBanner";
+import { WelcomeBanner } from "@/components/guide/WelcomeBanner";
 
-export default async function GuidePage() {
+export default async function GuidePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ welcome?: string }>;
+}) {
   const session = await auth();
+  const { welcome } = await searchParams;
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -16,6 +22,7 @@ export default async function GuidePage() {
         </p>
       </header>
 
+      {welcome === "1" && session?.user && <WelcomeBanner />}
       {session?.user && <ResidenceBanner userId={session.user.id} />}
 
       <section className="space-y-4">
@@ -60,6 +67,15 @@ export default async function GuidePage() {
           <li><Link href="/write/article" className="text-accent hover:underline">写长文</Link> — 轻博客式深度文章，可挂载到店铺房间</li>
           <li><Link href="/write/moment" className="text-accent hover:underline">发短文</Link> — 微博式短动态，可配图</li>
           <li>在街道留言、店铺留言板与访客互动</li>
+        </ul>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-serif text-xl font-semibold">第五步：街坊社交</h2>
+        <ul className="list-inside list-disc space-y-2 text-stone-600">
+          <li>在用户主页点击「关注」，在 <Link href="/feed" className="text-accent hover:underline">街坊动态</Link> 查看关注对象的更新</li>
+          <li>Header 铃铛图标接收评论、回复与关注通知</li>
+          <li>街道页「本街动态」聚合本街短文、新开店与新入住</li>
         </ul>
       </section>
 

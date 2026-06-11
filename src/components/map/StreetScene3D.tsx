@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { encodeRouteSlug } from "@/lib/route-slug";
+import { OpenShopForm } from "@/components/shop/OpenShopForm";
 import { StreetScene, type StreetSlotData } from "./StreetScene";
 import type { ApartmentBuildingData } from "./ApartmentTowers";
 
@@ -47,11 +48,15 @@ export function StreetSlotPanel({
   streetSlug,
   pinned,
   onClear,
+  isLoggedIn,
+  canOpenShop,
 }: {
   slot: StreetSlotData | null;
   streetSlug: string;
   pinned?: boolean;
   onClear?: () => void;
+  isLoggedIn?: boolean;
+  canOpenShop?: boolean;
 }) {
   if (!slot) return null;
 
@@ -106,14 +111,25 @@ export function StreetSlotPanel({
           <h3 className="font-serif text-lg font-semibold text-stone-900">
             铺位 #{slot.slotIndex + 1}
           </h3>
-          <p className="mt-1 text-sm text-stone-600">
-            点击左侧「申请开店」前往街道页完成入驻
-          </p>
+          {isLoggedIn && canOpenShop ? (
+            <OpenShopForm shopSlotId={slot.id} compact />
+          ) : isLoggedIn ? (
+            <p className="mt-2 text-sm text-stone-600">
+              你已有地盘，请先在主页释放后再开店。
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-stone-600">
+              <Link href={`/login?callbackUrl=/street/${encodeRouteSlug(streetSlug)}`} className="text-accent hover:underline">
+                登录
+              </Link>
+              后即可在此开店
+            </p>
+          )}
           <Link
             href={`/street/${encodeRouteSlug(streetSlug)}`}
-            className="mt-3 inline-block rounded bg-stone-800 px-4 py-2 text-sm text-white hover:bg-stone-700"
+            className="mt-3 inline-block text-sm text-stone-500 hover:text-stone-800"
           >
-            申请开店 →
+            或前往街道页 →
           </Link>
         </>
       )}

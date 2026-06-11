@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { addGuestbookEntry } from "@/app/actions/shop";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +20,7 @@ export function GuestbookForm({ shopId }: { shopId: string }) {
     const result = await addGuestbookEntry(shopId, fd.get("content") as string);
     if (result.ok) {
       e.currentTarget.reset();
+      toast.success("留言已发送");
       router.refresh();
     } else {
       setError(result.error);

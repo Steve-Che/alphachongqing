@@ -18,11 +18,24 @@ export function StreetFeed({ items }: { items: StreetFeedItem[] }) {
         >
           {item.kind === "moment" && (
             <>
-              <p className="whitespace-pre-wrap text-stone-800">{item.body}</p>
+              {item.author && (
+                <p className="mb-1 text-xs text-stone-400">
+                  <AuthorLink author={item.author} showAvatar className="text-stone-600" />
+                </p>
+              )}
+              <Link href={`/moment/${item.id}`} className="block hover:text-stone-900">
+                <p className="whitespace-pre-wrap text-stone-800">{item.body}</p>
+              </Link>
               {item.images && item.images.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {item.images.map((img) => (
-                    <PostImage key={img.url} src={img.url} alt="" className="h-20 w-20 rounded object-cover" />
+                    <Link key={img.url} href={`/moment/${item.id}`}>
+                      <PostImage
+                        src={img.url}
+                        alt=""
+                        className="h-20 w-20 rounded object-cover"
+                      />
+                    </Link>
                   ))}
                 </div>
               )}
@@ -45,7 +58,7 @@ export function StreetFeed({ items }: { items: StreetFeedItem[] }) {
             </p>
           )}
           <p className="mt-1 text-xs text-stone-400">
-            {item.author && (
+            {item.kind !== "moment" && item.author && (
               <>
                 <AuthorLink author={item.author} className="text-stone-500 hover:text-accent" />
                 {" · "}

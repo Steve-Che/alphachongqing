@@ -268,5 +268,54 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
     data: { readAt: new Date() },
   });
 
+  revalidatePath("/notifications");
   return { ok: true };
+}
+
+export async function loadMoreNotifications(cursor: string) {
+  const user = await getSessionUser();
+  if (!user) return { items: [], nextCursor: null };
+
+  const { getNotifications } = await import("@/lib/queries");
+  return getNotifications(user.id, 20, cursor);
+}
+
+export async function loadMoreFollowingFeed(cursor: string) {
+  const user = await getSessionUser();
+  if (!user) return { items: [], nextCursor: null };
+
+  const { getFollowingFeed } = await import("@/lib/queries");
+  return getFollowingFeed(user.id, 20, cursor);
+}
+
+export async function toggleLike(postId: string): Promise<ActionResult<{ liked: boolean; count: number }>> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "请先登录" };
+
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: { type: true, authorId: true },
+  });
+  if (!post || post.type !== "MOMENT") {
+    return { ok: false, error: "只能给短文点赞" };
+  }
+
+  const existing = await prisma.like.findUnique({
+    where: { userId_postId: { userId: user.id, postId } },
+  });
+
+  if (existing) {
+    await prisma.like.delete({
+      where: { userId_postId: { userId: user.id, postId } },
+    });
+  } else {
+    await prisma.like.create({
+      data: { userId: user.id, postId },
+    });
+  }
+
+  const count = await prisma.like.count({ where: { postId } });
+  revalidatePath("/feed");
+  revalidatePath(`/moment/${postId}`);
+  return { ok: true, data: { liked: !existing, count } };
 }

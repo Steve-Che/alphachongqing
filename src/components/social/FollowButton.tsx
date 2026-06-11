@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { toggleFollow } from "@/app/actions/social";
 import { Button } from "@/components/ui/button";
 
@@ -17,35 +18,35 @@ export function FollowButton({
   const router = useRouter();
   const [following, setFollowing] = useState(initialFollowing);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   if (isSelf) return null;
 
   async function handleClick() {
+    const prev = following;
+    setFollowing(!following);
     setLoading(true);
-    setError("");
+
     const result = await toggleFollow(followingId);
     if (result.ok && result.data) {
       setFollowing(result.data.following);
+      toast.success(result.data.following ? "已关注" : "已取消关注");
       router.refresh();
-    } else if (!result.ok) {
-      setError(result.error);
+    } else {
+      setFollowing(prev);
+      if (!result.ok) toast.error(result.error);
     }
     setLoading(false);
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        type="button"
-        size="sm"
-        variant={following ? "outline" : "default"}
-        onClick={handleClick}
-        disabled={loading}
-      >
-        {loading ? "…" : following ? "已关注" : "关注"}
-      </Button>
-      {error && <span className="text-xs text-red-600">{error}</span>}
-    </div>
+    <Button
+      type="button"
+      size="sm"
+      variant={following ? "outline" : "default"}
+      onClick={handleClick}
+      disabled={loading}
+    >
+      {following ? "已关注" : "关注"}
+    </Button>
   );
 }

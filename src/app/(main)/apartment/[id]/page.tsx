@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getApartmentUnit } from "@/lib/queries";
+import { auth } from "@/lib/auth";
+import { getApartmentUnit, getUserResidence } from "@/lib/queries";
 import { PostList } from "@/components/feed/PostList";
+import { RentApartmentButton } from "@/components/shop/RentApartmentButton";
 import { prisma } from "@/lib/db";
 import { encodeRouteSlug } from "@/lib/route-slug";
 
@@ -13,16 +15,24 @@ export default async function ApartmentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const unit = await getApartmentUnit(id);
+  const [unit, session] = await Promise.all([
+    getApartmentUnit(id),
+    auth(),
+  ]);
   if (!unit) notFound();
 
   const street = unit.building.street;
   const district = street.district;
+  const residence = session?.user?.id
+    ? await getUserResidence(session.user.id)
+    : null;
+  const canRent = !!session?.user && !residence?.shop && !residence?.apartmentUnit;
+
   const posts = unit.resident
     ? await prisma.post.findMany({
         where: { authorId: unit.resident.id, published: true },
         orderBy: { createdAt: "desc" },
-        include: { images: true },
+        include: { images: true, street: { select: { nameZh: true, slug: true } } },
       })
     : [];
 
@@ -62,7 +72,31 @@ export default async function ApartmentPage({
             </Link>
           </p>
         ) : (
-          <p className="mt-4 text-stone-500">此间空置，招租中。</p>
+          <div className="mt-4 space-y-3">
+            <p className="text-stone-600">此间空置，欢迎入住。</p>
+            {canRent ? (
+              <RentApartmentButton unitId={unit.id} streetSlug={street.slug} />
+            ) : session?.user ? (
+              <p className="text-sm text-stone-500">
+                你已有地盘。如需入住请先在
+                <Link href={`/u/${session.user.username}`} className="text-accent hover:underline">
+                  我的主页
+                </Link>
+                释放当前店铺或公寓。
+              </p>
+            ) : (
+              <p className="text-sm text-stone-500">
+                <Link href="/login" className="text-accent hover:underline">登录</Link>
+                后可选此间入住
+              </p>
+            )}
+            <Link
+              href={`/street/${encodeRouteSlug(street.slug)}#apartment`}
+              className="inline-block text-sm text-accent hover:underline"
+            >
+              去街道页选其他室号 →
+            </Link>
+          </div>
         )}
       </header>
 

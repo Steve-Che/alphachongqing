@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Canvas } from "@react-three/fiber";
 import { DISTRICTS } from "@/lib/chongqing/geo";
@@ -58,6 +58,18 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [hoveredBuilding, setHoveredBuilding] = useState<number | null>(null);
   const [selectedBuilding, setSelectedBuilding] = useState<number | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [canOpenShop, setCanOpenShop] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        setIsLoggedIn(!!data?.user);
+        const hasResidence = !!(data?.residence?.shop || data?.residence?.apartmentUnit);
+        setCanOpenShop(!!data?.user && !hasResidence);
+      });
+  }, []);
 
   const streetMarkers: StreetMarkerData[] = useMemo(
     () =>
@@ -356,6 +368,8 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
               slot={activeSlot}
               streetSlug={streetData.slug}
               pinned={!!selectedSlot}
+              isLoggedIn={isLoggedIn}
+              canOpenShop={canOpenShop}
               onClear={() => {
                 setSelectedSlotId(null);
                 setHoveredSlotId(null);

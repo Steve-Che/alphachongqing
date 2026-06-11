@@ -18,7 +18,7 @@ export function RegisterForm() {
     const formData = new FormData(e.currentTarget);
     const result = await registerUser(formData);
     if (result.ok) {
-      router.push("/");
+      router.push("/guide?welcome=1");
       router.refresh();
     } else {
       setError(result.error);

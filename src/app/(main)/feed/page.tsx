@@ -1,14 +1,31 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getFollowingFeed } from "@/lib/queries";
-import { PostList } from "@/components/feed/PostList";
+import { getFollowingFeed, getRecommendedUsers } from "@/lib/queries";
+import { FeedList } from "@/components/feed/FeedList";
+import { FollowButton } from "@/components/social/FollowButton";
+import { prisma } from "@/lib/db";
+import { AuthorLink } from "@/components/social/AuthorLink";
 
 export default async function FeedPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const posts = await getFollowingFeed(session.user.id);
+  const [{ items, nextCursor }, recommended] = await Promise.all([
+    getFollowingFeed(session.user.id),
+    getRecommendedUsers(5),
+  ]);
+
+  const likedRows = items.length
+    ? await prisma.like.findMany({
+        where: {
+          userId: session.user.id,
+          postId: { in: items.filter((p) => p.type === "MOMENT").map((p) => p.id) },
+        },
+        select: { postId: true },
+      })
+    : [];
+  const likedPostIds = likedRows.map((r) => r.postId);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -19,16 +36,42 @@ export default async function FeedPage() {
         </p>
       </header>
 
-      {posts.length === 0 ? (
-        <div className="rounded border border-dashed border-stone-300 bg-paper p-6 text-center text-stone-500">
-          <p>还没有动态。去</p>
-          <Link href="/" className="text-accent hover:underline">
-            城市地图
-          </Link>
-          <p className="mt-1">逛逛，关注感兴趣的街坊吧。</p>
+      {items.length === 0 ? (
+        <div className="space-y-6">
+          <div className="rounded border border-dashed border-stone-300 bg-paper p-6 text-center text-stone-500">
+            <p>还没有动态。可以先关注这些街坊：</p>
+          </div>
+          {recommended.length > 0 && (
+            <ul className="space-y-3">
+              {recommended.map((u) => (
+                <li
+                  key={u.id}
+                  className="flex items-center justify-between rounded border border-stone-200 bg-paper px-4 py-3"
+                >
+                  <AuthorLink author={u} showAvatar />
+                  <FollowButton
+                    followingId={u.id}
+                    initialFollowing={false}
+                    isSelf={u.id === session.user.id}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="text-center text-sm text-stone-500">
+            或去
+            <Link href="/" className="text-accent hover:underline"> 城市地图 </Link>
+            逛街道，在
+            <Link href="/guide" className="text-accent hover:underline"> 入驻指南 </Link>
+            了解街坊社交。
+          </p>
         </div>
       ) : (
-        <PostList posts={posts} />
+        <FeedList
+          initialPosts={items}
+          initialCursor={nextCursor}
+          likedPostIds={likedPostIds}
+        />
       )}
     </div>
   );

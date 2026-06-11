@@ -1,15 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { openShop } from "@/app/actions/shop";
+import { SettleSuccessModal } from "@/components/residence/SettleSuccessModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function OpenShopForm({ shopSlotId }: { shopSlotId: string }) {
-  const router = useRouter();
+export function OpenShopForm({
+  shopSlotId,
+  compact = false,
+  onSuccess,
+}: {
+  shopSlotId: string;
+  compact?: boolean;
+  onSuccess?: (slug: string) => void;
+}) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [shopSlug, setShopSlug] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,22 +30,44 @@ export function OpenShopForm({ shopSlotId }: { shopSlotId: string }) {
     const tagline = fd.get("tagline") as string;
     const result = await openShop(shopSlotId, name, tagline);
     if (result.ok && result.data) {
-      router.push(`/shop/${result.data.slug}`);
-      router.refresh();
+      setShopSlug(result.data.slug);
+      setModalOpen(true);
+      toast.success("店铺开业啦！");
+      onSuccess?.(result.data.slug);
+      e.currentTarget.reset();
     } else {
       setError(result.ok ? "开店失败" : result.error);
-      setLoading(false);
     }
+    setLoading(false);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-2 space-y-2 rounded border border-dashed border-accent bg-paper p-3">
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <Input name="name" placeholder="店铺名称" required />
-      <Input name="tagline" placeholder="一句话介绍（可选）" />
-      <Button type="submit" size="sm" disabled={loading}>
-        {loading ? "开店中…" : "在此开店"}
-      </Button>
-    </form>
+    <>
+      <form
+        onSubmit={handleSubmit}
+        className={
+          compact
+            ? "mt-2 space-y-2"
+            : "mt-2 space-y-2 rounded border border-dashed border-accent bg-paper p-3"
+        }
+      >
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <Input name="name" placeholder="店铺名称" required />
+        {!compact && <Input name="tagline" placeholder="一句话介绍（可选）" />}
+        <Button type="submit" size="sm" disabled={loading}>
+          {loading ? "开店中…" : "在此开店"}
+        </Button>
+      </form>
+      <SettleSuccessModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        type="shop"
+        links={{
+          primary: { href: `/shop/${shopSlug}`, label: "进入我的店铺" },
+          secondary: { href: "/write/article", label: "写第一篇长文" },
+          tertiary: { href: "/feed", label: "去街坊动态看看 →" },
+        }}
+      />
+    </>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { createMoment } from "@/app/actions/posts";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,6 +53,7 @@ export function MomentComposer({
     if (result.ok) {
       e.currentTarget.reset();
       setImages([]);
+      toast.success("短文已发布");
       router.refresh();
     } else {
       setError(result.error);

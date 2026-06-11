@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getUserByUsername, isFollowing } from "@/lib/queries";
+import { getUserByUsername, isFollowing, getFollowCounts } from "@/lib/queries";
 import { PostList } from "@/components/feed/PostList";
 import { auth } from "@/lib/auth";
 import { ReleaseResidenceButton } from "@/components/residence/ReleaseResidenceButton";
 import { FollowButton } from "@/components/social/FollowButton";
+import { Avatar } from "@/components/social/Avatar";
 
 export const revalidate = 60;
 
@@ -21,14 +22,17 @@ export default async function UserPage({
   if (!user) notFound();
 
   const isSelf = session?.user?.id === user.id;
-  const following =
+  const [following, followCounts] = await Promise.all([
     session?.user?.id && !isSelf
-      ? await isFollowing(session.user.id, user.id)
-      : false;
+      ? isFollowing(session.user.id, user.id)
+      : Promise.resolve(false),
+    getFollowCounts(user.id),
+  ]);
 
   const author = {
     username: user.username,
     displayName: user.displayName,
+    avatarUrl: user.avatarUrl,
   };
   const articles = user.posts
     .filter((p) => p.type === "ARTICLE")
@@ -41,11 +45,22 @@ export default async function UserPage({
     <div className="space-y-8">
       <header className="rounded border border-stone-200 bg-paper p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="font-serif text-3xl font-semibold">
-              {user.displayName ?? user.username}
-            </h1>
-            <p className="text-sm text-stone-500">@{user.username}</p>
+          <div className="flex gap-4">
+            <Avatar
+              username={user.username}
+              displayName={user.displayName}
+              avatarUrl={user.avatarUrl}
+              size="lg"
+            />
+            <div>
+              <h1 className="font-serif text-3xl font-semibold">
+                {user.displayName ?? user.username}
+              </h1>
+              <p className="text-sm text-stone-500">@{user.username}</p>
+              <p className="mt-1 text-sm text-stone-500">
+                {followCounts.followers} 粉丝 · {followCounts.following} 关注
+              </p>
+            </div>
           </div>
           {session?.user && (
             <FollowButton
@@ -74,8 +89,13 @@ export default async function UserPage({
           )}
         </div>
 
-        {isSelf && (user.shop || user.apartmentUnit) && (
-          <ReleaseResidenceButton />
+        {isSelf && (
+          <div className="mt-3 flex flex-wrap gap-3 text-sm">
+            <Link href="/settings" className="text-accent hover:underline">
+              编辑资料
+            </Link>
+            {(user.shop || user.apartmentUnit) && <ReleaseResidenceButton />}
+          </div>
         )}
       </header>
 
