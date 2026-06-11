@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/db";
+import { decodeRouteSlug } from "@/lib/route-slug";
 import type { ApartmentBuildingData } from "@/components/map/ApartmentTowers";
 import type { RoomType } from "@/generated/prisma/client";
 
@@ -201,7 +202,8 @@ export async function getStreetBySlug(slug: string) {
   return { ...street, apartmentSummaries, apartmentBuildings };
 }
 
-export async function getShopBySlug(slug: string) {
+export async function getShopBySlug(rawSlug: string) {
+  const slug = decodeRouteSlug(rawSlug);
   return prisma.shop.findUnique({
     where: { slug },
     include: {
@@ -227,7 +229,8 @@ export async function getShopBySlug(slug: string) {
   });
 }
 
-export async function getShopRoomBySlug(shopSlug: string, roomType: RoomType) {
+export async function getShopRoomBySlug(rawShopSlug: string, roomType: RoomType) {
+  const shopSlug = decodeRouteSlug(rawShopSlug);
   return prisma.shopRoom.findFirst({
     where: {
       shop: { slug: shopSlug },

@@ -7,7 +7,7 @@ import { MessageWithReplies } from "@/components/social/MessageWithReplies";
 import { RoomFloorPlan } from "@/components/shop/RoomFloorPlan";
 import { GuestbookForm } from "@/components/shop/GuestbookForm";
 import { roomTypeToSlug } from "@/lib/rooms";
-import { encodeRouteSlug } from "@/lib/route-slug";
+import { encodeRouteSlug, shopPath } from "@/lib/route-slug";
 
 export const revalidate = 60;
 
@@ -120,7 +120,7 @@ export default async function ShopPage({
             <p className="text-stone-500">前厅还没有内容。</p>
           )}
           <Link
-            href={`/shop/${shop.slug}/${roomTypeToSlug("FRONT_HALL")}`}
+            href={shopPath(shop.slug, roomTypeToSlug("FRONT_HALL"))}
             className="mt-2 inline-block text-sm text-accent hover:underline"
           >
             进入前厅 →

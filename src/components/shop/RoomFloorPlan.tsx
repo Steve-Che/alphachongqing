@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ROOM_LABELS } from "@/lib/chongqing/geo";
 import { roomTypeToSlug } from "@/lib/rooms";
+import { shopPath } from "@/lib/route-slug";
 
 type Room = {
   id: string;
@@ -41,7 +42,7 @@ export function RoomFloorPlan({
         return (
           <Link
             key={type}
-            href={`/shop/${shopSlug}/${slug}`}
+            href={shopPath(shopSlug, slug)}
             className={`rounded border p-3 text-sm transition-colors ${grid} ${
               active
                 ? "border-stone-800 bg-stone-800 text-white"

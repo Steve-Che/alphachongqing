@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { openShop } from "@/app/actions/shop";
+import { shopPath } from "@/lib/route-slug";
 import { SettleSuccessModal } from "@/components/residence/SettleSuccessModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,7 +64,7 @@ export function OpenShopForm({
         onClose={() => setModalOpen(false)}
         type="shop"
         links={{
-          primary: { href: `/shop/${shopSlug}`, label: "进入我的店铺" },
+          primary: { href: shopPath(shopSlug), label: "进入我的店铺" },
           secondary: { href: "/write/article", label: "写第一篇长文" },
           tertiary: { href: "/feed", label: "去街坊动态看看 →" },
         }}

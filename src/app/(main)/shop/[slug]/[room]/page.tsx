@@ -9,6 +9,7 @@ import { RoomNav } from "@/components/shop/RoomNav";
 import { GuestbookForm } from "@/components/shop/GuestbookForm";
 import { AttachPostForm } from "@/components/shop/AttachPostForm";
 import { formatDate } from "@/lib/utils";
+import { shopPath } from "@/lib/route-slug";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 
 export const revalidate = 60;
@@ -53,7 +54,7 @@ export default async function ShopRoomPage({
   return (
     <div className="space-y-6">
       <nav className="text-sm text-stone-500">
-        <Link href={`/shop/${room.shop.slug}`} className="hover:text-stone-800">
+        <Link href={shopPath(room.shop.slug)} className="hover:text-stone-800">
           {room.shop.name}
         </Link>
         <span className="mx-2">/</span>

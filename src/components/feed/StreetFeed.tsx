@@ -3,6 +3,7 @@ import { formatDate } from "@/lib/utils";
 import { AuthorLink } from "@/components/social/AuthorLink";
 import { PostImage } from "@/components/ui/post-image";
 import type { StreetFeedItem } from "@/lib/queries";
+import { shopPath } from "@/lib/route-slug";
 
 export function StreetFeed({
   items,
@@ -62,7 +63,7 @@ export function StreetFeed({
           {item.kind === "shop" && (
             <p className="text-stone-800">
               新开店：
-              <Link href={`/shop/${item.shopSlug}`} className="text-accent hover:underline">
+              <Link href={shopPath(item.shopSlug)} className="text-accent hover:underline">
                 {item.shopName}
               </Link>
             </p>

@@ -14,6 +14,7 @@ import { ReleaseResidenceButton } from "@/components/residence/ReleaseResidenceB
 import { FollowButton } from "@/components/social/FollowButton";
 import { ShareButton } from "@/components/social/ShareButton";
 import { Avatar } from "@/components/social/Avatar";
+import { shopPath } from "@/lib/route-slug";
 
 export const revalidate = 60;
 
@@ -121,7 +122,7 @@ export default async function UserPage({
 
         <div className="mt-4 flex flex-wrap gap-4 text-sm">
           {user.shop && (
-            <Link href={`/shop/${user.shop.slug}`} className="text-accent hover:underline">
+            <Link href={shopPath(user.shop.slug)} className="text-accent hover:underline">
               店铺：{user.shop.name}（{user.shop.shopSlot.street.nameZh}）
             </Link>
           )}

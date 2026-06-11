@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { moveShop } from "@/app/actions/shop";
+import { shopPath } from "@/lib/route-slug";
 import { MoveSuccessModal } from "@/components/residence/MoveSuccessModal";
 import { Button } from "@/components/ui/button";
 
@@ -65,7 +66,7 @@ export function MoveShopButton({
         onClose={() => setModalOpen(false)}
         type="shop"
         message={message}
-        primaryHref={shopSlug ? `/shop/${shopSlug}` : "/"}
+        primaryHref={shopSlug ? shopPath(shopSlug) : "/"}
         primaryLabel="查看我的店铺"
       />
     </>

@@ -11,3 +11,9 @@ export function decodeRouteSlug(slug: string): string {
 export function encodeRouteSlug(slug: string): string {
   return encodeURIComponent(slug);
 }
+
+/** 店铺页路径（中文店名 slug 需编码） */
+export function shopPath(slug: string, room?: string): string {
+  const base = `/shop/${encodeRouteSlug(slug)}`;
+  return room ? `${base}/${room}` : base;
+}

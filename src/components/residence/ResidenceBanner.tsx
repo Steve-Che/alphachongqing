@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getUserResidence } from "@/lib/queries";
+import { shopPath } from "@/lib/route-slug";
 
 export async function ResidenceBanner({ userId }: { userId: string }) {
   const residence = await getUserResidence(userId);
@@ -11,7 +12,7 @@ export async function ResidenceBanner({ userId }: { userId: string }) {
       <div className="rounded-lg border border-accent/40 bg-paper px-4 py-3">
         <p className="text-xs text-stone-500">我的地盘 · 店铺</p>
         <p className="font-medium text-stone-900">
-          <Link href={`/shop/${residence.shop.slug}`} className="hover:text-accent">
+          <Link href={shopPath(residence.shop.slug)} className="hover:text-accent">
             {residence.shop.name}
           </Link>
           <span className="text-stone-500">
@@ -20,7 +21,7 @@ export async function ResidenceBanner({ userId }: { userId: string }) {
           </span>
         </p>
         <div className="mt-2 flex flex-wrap gap-3 text-sm">
-          <Link href={`/shop/${residence.shop.slug}`} className="text-accent hover:underline">
+          <Link href={shopPath(residence.shop.slug)} className="text-accent hover:underline">
             管理店铺
           </Link>
           <Link href="/#map" className="text-accent hover:underline">

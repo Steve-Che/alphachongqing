@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { DEFAULT_ROOM_NAMES, ROOM_ORDER } from "@/lib/chongqing/geo";
+import { shopPath } from "@/lib/route-slug";
 import { slugify } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -52,6 +53,7 @@ export async function openShop(
       }
 
       let slug = slugify(trimmedName);
+      if (!slug) slug = `shop-${Date.now().toString(36)}`;
       const slugExists = await tx.shop.findUnique({ where: { slug } });
       if (slugExists) slug = `${slug}-${Date.now().toString(36)}`;
 
@@ -516,7 +518,7 @@ export async function openShopAndRedirect(
 ): Promise<void> {
   const result = await openShop(shopSlotId, name, tagline);
   if (result.ok && result.data) {
-    redirect(`/shop/${result.data.slug}`);
+    redirect(shopPath(result.data.slug));
   }
   throw new Error(result.ok ? "未知错误" : result.error);
 }

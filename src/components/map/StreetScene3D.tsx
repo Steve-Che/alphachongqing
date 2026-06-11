@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { encodeRouteSlug } from "@/lib/route-slug";
+import { encodeRouteSlug, shopPath } from "@/lib/route-slug";
 import type { MeResidence } from "@/lib/residence-types";
 import { OpenShopForm } from "@/components/shop/OpenShopForm";
 import { MoveShopButton } from "@/components/shop/MoveShopButton";
@@ -95,7 +95,7 @@ export function StreetSlotPanel({
             {slot.shop!.name}
           </h3>
           <Link
-            href={`/shop/${encodeRouteSlug(slot.shop!.slug)}`}
+            href={shopPath(slot.shop!.slug)}
             className="mt-3 inline-block rounded bg-stone-800 px-4 py-2 text-sm text-white hover:bg-stone-700"
           >
             进入店铺 →

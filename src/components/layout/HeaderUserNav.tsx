@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { signOutAction } from "@/app/actions/auth-nav";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/social/NotificationBell";
+import { shopPath } from "@/lib/route-slug";
 
 type MeData = {
   user: {
@@ -76,7 +77,7 @@ export function HeaderUserNav() {
           搜索
         </Link>
         {residence?.shop && (
-          <Link href={`/shop/${residence.shop.slug}`} className="text-accent hover:underline">
+          <Link href={shopPath(residence.shop.slug)} className="text-accent hover:underline">
             我的店铺
           </Link>
         )}

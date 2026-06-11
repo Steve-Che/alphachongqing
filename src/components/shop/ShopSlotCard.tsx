@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { shopPath } from "@/lib/route-slug";
 import { OpenShopForm } from "./OpenShopForm";
 import { MoveShopButton } from "./MoveShopButton";
 
@@ -43,7 +44,7 @@ export function ShopSlotCard({
       {occupied ? (
         <div>
           <Link
-            href={`/shop/${slot.shop!.slug}`}
+            href={shopPath(slot.shop!.slug)}
             className="mt-1 block font-medium text-stone-900 hover:text-accent"
           >
             {slot.shop!.name}
@@ -52,7 +53,7 @@ export function ShopSlotCard({
             店主：{slot.shop!.owner.displayName ?? slot.shop!.owner.username}
           </p>
           <Link
-            href={`/shop/${slot.shop!.slug}`}
+            href={shopPath(slot.shop!.slug)}
             className="mt-2 inline-block text-xs text-accent hover:underline"
           >
             进店逛逛 →

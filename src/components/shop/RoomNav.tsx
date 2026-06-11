@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ROOM_LABELS } from "@/lib/chongqing/geo";
+import { roomTypeToSlug } from "@/lib/rooms";
+import { shopPath } from "@/lib/route-slug";
 
 type Room = {
   id: string;
@@ -19,7 +21,7 @@ export function RoomNav({
   return (
     <nav className="flex flex-wrap gap-2 border-b border-stone-200 pb-4">
       <Link
-        href={`/shop/${shopSlug}`}
+        href={shopPath(shopSlug)}
         className={`rounded px-3 py-1.5 text-sm ${
           !activeRoomType
             ? "bg-stone-800 text-white"
@@ -31,7 +33,7 @@ export function RoomNav({
       {rooms.map((room) => (
         <Link
           key={room.id}
-          href={`/shop/${shopSlug}/${room.roomType.toLowerCase().replace(/_/g, "-")}`}
+          href={shopPath(shopSlug, roomTypeToSlug(room.roomType))}
           className={`rounded px-3 py-1.5 text-sm ${
             activeRoomType === room.roomType
               ? "bg-stone-800 text-white"
