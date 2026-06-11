@@ -29,6 +29,7 @@ export function ArticleEditor({
   const [coverUrl, setCoverUrl] = useState(initialCoverUrl);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const isEdit = !!postId;
 
   const editor = useEditor({
@@ -61,7 +62,9 @@ export function ArticleEditor({
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file || !editor) return;
+      setImageUploading(true);
       const result = await uploadImage(file, "content");
+      setImageUploading(false);
       if (result.ok) editor.chain().focus().setImage({ src: result.url }).run();
       else toast.error(result.error);
     };
@@ -106,8 +109,14 @@ export function ArticleEditor({
         placeholder="封面图 URL（可选，也可在正文中插图）"
       />
       <div className="flex gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={handleImageUpload}>
-          插入图片
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={imageUploading}
+          onClick={handleImageUpload}
+        >
+          {imageUploading ? "压缩并上传中…" : "插入图片"}
         </Button>
       </div>
       <EditorContent editor={editor} />

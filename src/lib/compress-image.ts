@@ -1,11 +1,7 @@
 import sharp from "sharp";
+import { IMAGE_UPLOAD_PRESETS, type ImagePurpose } from "@/lib/image-upload-presets";
 
-export type ImagePurpose = "avatar" | "content";
-
-const PRESETS: Record<ImagePurpose, { maxDimension: number; maxBytes: number }> = {
-  avatar: { maxDimension: 512, maxBytes: 200 * 1024 },
-  content: { maxDimension: 1920, maxBytes: 400 * 1024 },
-};
+export type { ImagePurpose } from "@/lib/image-upload-presets";
 
 export type CompressedImage = {
   data: Buffer;
@@ -15,15 +11,15 @@ export type CompressedImage = {
   compressedBytes: number;
 };
 
-/** 将图片压缩为 JPEG，目标体积约几百 KB 以内 */
+/** 服务端二次压缩为 JPEG（客户端已压缩时作为兜底） */
 export async function compressImage(
   input: Buffer,
   purpose: ImagePurpose = "content",
 ): Promise<CompressedImage> {
-  const { maxDimension, maxBytes } = PRESETS[purpose];
+  const { maxDimension, maxBytes } = IMAGE_UPLOAD_PRESETS[purpose];
   const originalBytes = input.length;
 
-  let dimension = maxDimension;
+  let dimension: number = maxDimension;
   let quality = 82;
   let data: Buffer = Buffer.alloc(0);
 
@@ -43,7 +39,7 @@ export async function compressImage(
 
     if (quality > 50) {
       quality -= 8;
-    } else if (dimension > 640) {
+    } else if (dimension > 960) {
       dimension = Math.round(dimension * 0.85);
       quality = 78;
     } else {

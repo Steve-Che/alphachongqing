@@ -1,11 +1,14 @@
 import { auth } from "@/lib/auth";
-import { compressImage, type ImagePurpose } from "@/lib/compress-image";
+import { compressImage } from "@/lib/compress-image";
+import {
+  IMAGE_UPLOAD_PRESETS,
+  SERVER_MAX_UPLOAD_BYTES,
+  type ImagePurpose,
+} from "@/lib/image-upload-presets";
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-
-const MAX_INPUT_BYTES = 15 * 1024 * 1024;
 
 function parsePurpose(value: FormDataEntryValue | null): ImagePurpose {
   return value === "avatar" ? "avatar" : "content";
@@ -29,8 +32,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "仅支持图片" }, { status: 400 });
   }
 
-  if (file.size > MAX_INPUT_BYTES) {
-    return NextResponse.json({ error: "原图不超过 15MB" }, { status: 400 });
+  if (file.size > SERVER_MAX_UPLOAD_BYTES) {
+    const maxMb = Math.round(SERVER_MAX_UPLOAD_BYTES / 1024 / 1024);
+    return NextResponse.json(
+      { error: `上传数据超过 ${maxMb}MB，请刷新页面后重试（浏览器会自动压缩）` },
+      { status: 400 },
+    );
   }
 
   const token = process.env.BLOB_READ_WRITE_TOKEN;
@@ -56,8 +63,13 @@ export async function POST(request: Request) {
       url: blob.url,
       size: compressed.compressedBytes,
       originalSize: compressed.originalBytes,
+      maxBytes: IMAGE_UPLOAD_PRESETS[purpose].maxBytes,
     });
-  } catch {
-    return NextResponse.json({ error: "图片处理失败，请换一张试试" }, { status: 400 });
+  } catch (err) {
+    console.error("[upload]", err);
+    return NextResponse.json(
+      { error: "图片处理失败，请换用 JPG/PNG 或稍小的照片" },
+      { status: 400 },
+    );
   }
 }

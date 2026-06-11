@@ -35,8 +35,12 @@ export function MomentComposer({
     setError("");
     const result = await uploadImage(file, "content");
     setUploading(false);
-    if (result.ok) setImages((prev) => [...prev, result.url].slice(0, 9));
-    else setError(result.error);
+    if (result.ok) {
+      setImages((prev) => [...prev, result.url].slice(0, 9));
+    } else {
+      setError(result.error);
+      toast.error(result.error);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -112,7 +116,7 @@ export function MomentComposer({
               if (f) handleImageUpload(f);
             }}
           />
-          {uploading ? "上传中…" : "添加图片"}
+          {uploading ? "压缩并上传中…" : "添加图片"}
         </label>
         <span className="text-xs text-stone-400">{images.length}/9 张</span>
         <Button type="submit" size="sm" disabled={loading}>

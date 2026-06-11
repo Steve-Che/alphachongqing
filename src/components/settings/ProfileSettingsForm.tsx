@@ -73,7 +73,7 @@ export function ProfileSettingsForm({
               if (f) handleAvatarUpload(f);
             }}
           />
-          {uploading ? "上传中…" : "更换头像"}
+          {uploading ? "压缩并上传中…" : "更换头像"}
         </label>
       </div>
       <div>
