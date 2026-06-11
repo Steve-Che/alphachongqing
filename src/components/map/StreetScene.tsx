@@ -1,12 +1,16 @@
 "use client";
 
-import { Html } from "@react-three/drei";
 import { type ThreeEvent } from "@react-three/fiber";
 import {
   STREET_GROUND_SIZE,
   STREET_ROAD_SIZE,
   getStreetSlotPosition,
 } from "@/lib/chongqing/street-layout";
+import {
+  ApartmentTowers,
+  type ApartmentBuildingData,
+} from "./ApartmentTowers";
+import { SketchEdges, ToonFaceMaterial } from "./sketchup-materials";
 
 export type StreetSlotData = {
   id: string;
@@ -18,10 +22,13 @@ export type StreetSlotData = {
 
 type StreetSceneProps = {
   slots: StreetSlotData[];
+  apartmentBuildings?: ApartmentBuildingData[];
   selectedSlotId?: string | null;
+  selectedBuildingNumber?: number | null;
   onSlotHover?: (slotId: string | null) => void;
   onSlotSelect?: (slotId: string | null) => void;
-  showSlotLabels?: boolean;
+  onBuildingHover?: (buildingNumber: number | null) => void;
+  onBuildingSelect?: (buildingNumber: number | null) => void;
 };
 
 function ShopBuilding({
@@ -30,14 +37,12 @@ function ShopBuilding({
   selected,
   onHover,
   onSelect,
-  showLabel,
 }: {
   slot: StreetSlotData;
   position: [number, number, number];
   selected: boolean;
   onHover: (id: string | null) => void;
   onSelect: (id: string) => void;
-  showLabel?: boolean;
 }) {
   const occupied = slot.status === "OCCUPIED";
   const active = selected;
@@ -65,12 +70,6 @@ function ShopBuilding({
     onSelect(slot.id);
   };
 
-  const label = slot.isCenter
-    ? "街心"
-    : occupied && slot.shop
-      ? slot.shop.name
-      : `空铺 #${slot.slotIndex + 1}`;
-
   return (
     <group position={position}>
       <mesh
@@ -80,43 +79,26 @@ function ShopBuilding({
         onClick={handleClick}
       >
         <boxGeometry args={[1.8, height, 1.8]} />
-        <meshStandardMaterial
+        <ToonFaceMaterial
           color={color}
           emissive={active ? color : "#000000"}
-          emissiveIntensity={active ? 0.4 : 0}
+          emissiveIntensity={active ? 0.35 : 0}
         />
+        <SketchEdges />
       </mesh>
-      {showLabel && (active || occupied) && (
-        <Html
-          position={[0, height + 0.8, 0]}
-          center
-          distanceFactor={18}
-          style={{ pointerEvents: "none" }}
-        >
-          <div
-            className={`whitespace-nowrap rounded px-2 py-1 text-[10px] shadow-sm ${
-              active
-                ? "bg-stone-900 text-white ring-2 ring-white/80"
-                : "bg-black/70 text-white"
-            }`}
-          >
-            {label}
-            {!occupied && active && (
-              <span className="ml-1 opacity-80">· 已选中</span>
-            )}
-          </div>
-        </Html>
-      )}
     </group>
   );
 }
 
 export function StreetScene({
   slots,
+  apartmentBuildings = [],
   selectedSlotId,
+  selectedBuildingNumber,
   onSlotHover,
   onSlotSelect,
-  showSlotLabels = true,
+  onBuildingHover,
+  onBuildingSelect,
 }: StreetSceneProps) {
   const shopSlots = slots.filter((s) => !s.isCenter);
   const center = slots.find((s) => s.isCenter);
@@ -125,6 +107,8 @@ export function StreetScene({
     e.stopPropagation();
     onSlotSelect?.(null);
     onSlotHover?.(null);
+    onBuildingSelect?.(null);
+    onBuildingHover?.(null);
   };
 
   return (
@@ -135,12 +119,23 @@ export function StreetScene({
         onClick={clearSelection}
       >
         <planeGeometry args={STREET_GROUND_SIZE} />
-        <meshStandardMaterial color="#8a9a7a" />
+        <ToonFaceMaterial color="#8a9a7a" />
+        <SketchEdges threshold={5} />
       </mesh>
       <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={STREET_ROAD_SIZE} />
-        <meshStandardMaterial color="#b8a88a" />
+        <ToonFaceMaterial color="#b8a88a" />
+        <SketchEdges threshold={5} />
       </mesh>
+
+      {apartmentBuildings.length > 0 && (
+        <ApartmentTowers
+          buildings={apartmentBuildings}
+          selectedBuildingNumber={selectedBuildingNumber}
+          onBuildingHover={onBuildingHover}
+          onBuildingSelect={onBuildingSelect}
+        />
+      )}
 
       {center && (
         <ShopBuilding
@@ -149,7 +144,6 @@ export function StreetScene({
           selected={selectedSlotId === center.id}
           onHover={onSlotHover ?? (() => {})}
           onSelect={(id) => onSlotSelect?.(id)}
-          showLabel={showSlotLabels}
         />
       )}
 
@@ -161,7 +155,6 @@ export function StreetScene({
           selected={selectedSlotId === slot.id}
           onHover={onSlotHover ?? (() => {})}
           onSelect={(id) => onSlotSelect?.(id)}
-          showLabel={showSlotLabels}
         />
       ))}
     </group>

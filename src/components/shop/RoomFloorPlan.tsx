@@ -6,7 +6,8 @@ type Room = {
   id: string;
   roomType: string;
   displayName: string;
-  roomContents: { id: string }[];
+  _count?: { roomContents: number };
+  roomContents?: { id: string }[];
 };
 
 export function RoomFloorPlan({
@@ -33,7 +34,8 @@ export function RoomFloorPlan({
         const room = rooms.find((r) => r.roomType === type);
         if (!room) return null;
         const active = activeRoomType === type;
-        const hasContent = room.roomContents.length > 0;
+        const hasContent =
+          (room._count?.roomContents ?? room.roomContents?.length ?? 0) > 0;
         const slug = roomTypeToSlug(type);
 
         return (

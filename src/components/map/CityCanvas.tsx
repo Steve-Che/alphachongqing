@@ -3,7 +3,6 @@
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { Canvas } from "@react-three/fiber";
-import { Sky } from "@react-three/drei";
 import { DISTRICTS } from "@/lib/chongqing/geo";
 import type { MapLevel } from "@/lib/chongqing/camera";
 import { getStreetWorldPosition } from "@/lib/chongqing/pick";
@@ -20,6 +19,9 @@ import {
 } from "./StreetScene3D";
 import { MapCanvasSetup } from "./MapCanvasSetup";
 import { encodeRouteSlug } from "@/lib/route-slug";
+import { ApartmentBuildingPanel } from "./ApartmentBuildingPanel";
+import type { ApartmentBuildingData } from "./ApartmentTowers";
+import { SketchupSceneLighting } from "./sketchup-materials";
 
 export type MapStreetData = {
   slug: string;
@@ -27,6 +29,12 @@ export type MapStreetData = {
   sortOrder: number;
   districtSlug: string;
   slots: StreetSlotData[];
+  apartmentBuildings?: ApartmentBuildingData[];
+  apartmentsSummary?: {
+    totalBuildings: number;
+    occupiedUnits: number;
+    totalUnits: number;
+  };
 };
 
 export type MapDistrictData = {
@@ -48,6 +56,8 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
   const [hoveredStreet, setHoveredStreet] = useState<string | null>(null);
   const [hoveredSlotId, setHoveredSlotId] = useState<string | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [hoveredBuilding, setHoveredBuilding] = useState<number | null>(null);
+  const [selectedBuilding, setSelectedBuilding] = useState<number | null>(null);
 
   const streetMarkers: StreetMarkerData[] = useMemo(
     () =>
@@ -63,6 +73,7 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
           vacantCount: s.slots.filter(
             (sl) => !sl.isCenter && sl.status !== "OCCUPIED",
           ).length,
+          apartmentOccupied: s.apartmentsSummary?.occupiedUnits ?? 0,
         })),
       ),
     [districts],
@@ -95,6 +106,12 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
     streetData?.slots.find((s) => s.id === hoveredSlotId) ?? null;
   const activeSlot = selectedSlot ?? hoveredSlot;
 
+  const activeBuildingData =
+    streetData?.apartmentBuildings?.find(
+      (b) =>
+        b.buildingNumber === (selectedBuilding ?? hoveredBuilding),
+    ) ?? null;
+
   const focusCenter = useMemo(() => {
     if (!districtSlug) return null;
     return DISTRICTS.find((d) => d.slug === districtSlug)?.center ?? null;
@@ -117,6 +134,8 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
     setHoveredStreet(null);
     setHoveredSlotId(null);
     setSelectedSlotId(null);
+    setHoveredBuilding(null);
+    setSelectedBuilding(null);
     setLevel("district");
   };
 
@@ -124,6 +143,8 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
     setStreetSlug(slug);
     setHoveredSlotId(null);
     setSelectedSlotId(null);
+    setHoveredBuilding(null);
+    setSelectedBuilding(null);
     setLevel("street");
   };
 
@@ -135,6 +156,8 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
     setHoveredStreet(null);
     setHoveredSlotId(null);
     setSelectedSlotId(null);
+    setHoveredBuilding(null);
+    setSelectedBuilding(null);
   };
 
   const backToDistrict = () => {
@@ -143,6 +166,8 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
     setHoveredStreet(null);
     setHoveredSlotId(null);
     setSelectedSlotId(null);
+    setHoveredBuilding(null);
+    setSelectedBuilding(null);
   };
 
   const hint =
@@ -150,11 +175,11 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
       ? "固定视角 · 滚轮缩放 · 点击区域进入城区"
       : level === "district"
         ? "滚轮缩放 · 点击街道块下钻到街景"
-        : "点击铺面选中 · 底部面板可点「申请开店」· 点地面取消选择";
+        : "点击铺面或公寓楼选中 · 底部面板操作 · 点地面取消";
 
   return (
     <div className="relative">
-      <div className="h-[65vh] min-h-[460px] w-full rounded-lg border border-stone-200 bg-[#c5d4e0]">
+      <div className="h-[65vh] min-h-[460px] w-full rounded-lg border border-stone-200 bg-[#d4ddd0]">
         <Canvas
           camera={{ position: [0, 78, 78], fov: 42, near: 0.1, far: 500 }}
           gl={{ antialias: true }}
@@ -162,9 +187,7 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
         >
           <Suspense fallback={null}>
             <MapCanvasSetup />
-            <Sky sunPosition={[100, 20, 100]} />
-            <ambientLight intensity={0.55} />
-            <directionalLight position={[30, 50, 20]} intensity={1.1} />
+            <SketchupSceneLighting />
             <TerrainLayer />
             <RiverLayer />
 
@@ -193,9 +216,19 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
               <group position={[focusStreet.x, 0, focusStreet.z]}>
                 <StreetScene3D
                   slots={streetData.slots}
+                  apartmentBuildings={streetData.apartmentBuildings}
                   selectedSlotId={selectedSlotId}
+                  selectedBuildingNumber={selectedBuilding}
                   onSlotHover={setHoveredSlotId}
-                  onSlotSelect={setSelectedSlotId}
+                  onSlotSelect={(id) => {
+                    setSelectedSlotId(id);
+                    if (id) setSelectedBuilding(null);
+                  }}
+                  onBuildingHover={setHoveredBuilding}
+                  onBuildingSelect={(n) => {
+                    setSelectedBuilding(n);
+                    if (n) setSelectedSlotId(null);
+                  }}
                 />
               </group>
             )}
@@ -287,7 +320,8 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
               </h3>
               <p className="mt-1 text-sm text-stone-600">
                 {streetData.slots.filter((s) => s.status === "OCCUPIED").length}{" "}
-                家店铺营业中，点击进入街景
+                家店铺 ·{" "}
+                {streetData.apartmentsSummary?.occupiedUnits ?? 0} 户公寓入住
               </p>
               <button
                 type="button"
@@ -299,14 +333,14 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
             </div>
           )}
 
-          {level === "street" && streetData && !activeSlot && (
+          {level === "street" && streetData && !activeSlot && !activeBuildingData && (
             <div className="pointer-events-auto max-w-sm rounded-lg border border-stone-200 bg-paper/95 p-4 shadow-md backdrop-blur-sm">
               <p className="text-xs text-stone-400">街景</p>
               <h3 className="font-serif text-lg font-semibold text-stone-900">
                 {streetData.nameZh}
               </h3>
               <p className="mt-1 text-sm text-stone-600">
-                点击铺面选中，底部面板可进入店铺或申请开店
+                前排金色为店铺，后排蓝灰为 30 栋公寓楼
               </p>
               <Link
                 href={`/street/${encodeRouteSlug(streetData.slug)}`}
@@ -325,6 +359,18 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
               onClear={() => {
                 setSelectedSlotId(null);
                 setHoveredSlotId(null);
+              }}
+            />
+          )}
+
+          {level === "street" && streetData && activeBuildingData && !activeSlot && (
+            <ApartmentBuildingPanel
+              building={activeBuildingData}
+              streetSlug={streetData.slug}
+              pinned={!!selectedBuilding}
+              onClear={() => {
+                setSelectedBuilding(null);
+                setHoveredBuilding(null);
               }}
             />
           )}

@@ -43,6 +43,13 @@ export default async function DistrictPage({
           {district.streets.map((street) => {
             const occupied = street.shopSlots.filter((s) => s.status === "OCCUPIED").length;
             const total = street.shopSlots.filter((s) => !s.isCenter).length;
+            const aptOccupied = street.apartmentBuildings.reduce(
+              (sum, b) => sum + b.units.filter((u) => u.residentId).length,
+              0,
+            );
+            const aptTotal =
+              street.apartmentBuildings.length *
+              (street.apartmentBuildings[0]?.units.length ?? 50);
 
             return (
               <li key={street.id}>
@@ -52,9 +59,14 @@ export default async function DistrictPage({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-medium text-stone-900">{street.nameZh}</span>
-                    <span className="shrink-0 rounded bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
-                      店铺 {occupied}/{total}
-                    </span>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="rounded bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
+                        店铺 {occupied}/{total}
+                      </span>
+                      <span className="rounded bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
+                        公寓 {aptOccupied}/{aptTotal}
+                      </span>
+                    </div>
                   </div>
                   {street.summary && (
                     <p className="mt-1 text-sm text-stone-500">{street.summary}</p>

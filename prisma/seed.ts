@@ -14,6 +14,7 @@ import type { RoomType } from "../src/generated/prisma/client";
 const BATCH_SIZE = 5000;
 const SEED_ADMIN_EMAIL = "admin@alphachongqing.local";
 const SEED_DEMO_EMAIL = "demo@alphachongqing.local";
+const SEED_APT_EMAIL = "apt@alphachongqing.local";
 
 const adapter = new PrismaPg({ connectionString: getDatabaseUrl() });
 const prisma = new PrismaClient({ adapter });
@@ -55,12 +56,15 @@ async function clearCityData() {
 
 async function ensureSeedUsers() {
   await prisma.user.deleteMany({
-    where: { email: { in: [SEED_ADMIN_EMAIL, SEED_DEMO_EMAIL] } },
+    where: {
+      email: { in: [SEED_ADMIN_EMAIL, SEED_DEMO_EMAIL, SEED_APT_EMAIL] },
+    },
   });
 
-  const [adminHash, demoHash] = await Promise.all([
+  const [adminHash, demoHash, aptHash] = await Promise.all([
     bcrypt.hash("admin123", 10),
     bcrypt.hash("demo1234", 10),
+    bcrypt.hash("apt1234", 10),
   ]);
 
   const admin = await prisma.user.create({
@@ -84,7 +88,17 @@ async function ensureSeedUsers() {
     },
   });
 
-  return { admin, demoUser };
+  const aptUser = await prisma.user.create({
+    data: {
+      email: SEED_APT_EMAIL,
+      username: "lanjing",
+      passwordHash: aptHash,
+      displayName: "蓝静",
+      bio: "住在洪崖洞巷公寓，爱发短文。",
+    },
+  });
+
+  return { admin, demoUser, aptUser };
 }
 
 async function seedInviteCodes(adminId: string) {
@@ -293,6 +307,39 @@ async function seedDemoContent(
   });
 }
 
+async function seedApartmentDemo(aptUserId: string) {
+  console.log("   写入演示公寓…");
+  const street = await prisma.street.findFirst({
+    where: { nameZh: "洪崖洞巷" },
+  });
+  if (!street) return;
+
+  const building = await prisma.apartmentBuilding.findFirst({
+    where: { streetId: street.id, buildingNumber: 3 },
+    include: { units: { where: { unitNumber: 8 }, take: 1 } },
+  });
+  const unit = building?.units[0];
+  if (!unit) return;
+
+  await prisma.apartmentUnit.update({
+    where: { id: unit.id },
+    data: { residentId: aptUserId },
+  });
+  await prisma.user.update({
+    where: { id: aptUserId },
+    data: { residenceType: "APARTMENT" },
+  });
+
+  await prisma.post.create({
+    data: {
+      type: "MOMENT",
+      body: "从公寓窗台望出去，洪崖洞的灯火像一串项链。",
+      authorId: aptUserId,
+      streetId: street.id,
+    },
+  });
+}
+
 async function main() {
   const started = Date.now();
   console.log("🌱 开始播种阿尔法重庆（批量模式）…");
@@ -307,10 +354,11 @@ async function main() {
   }
 
   await clearCityData();
-  const { admin, demoUser } = await ensureSeedUsers();
+  const { admin, demoUser, aptUser } = await ensureSeedUsers();
   await seedInviteCodes(admin.id);
   await seedCityStructure();
   await seedDemoContent(admin.id, demoUser.id);
+  await seedApartmentDemo(aptUser.id);
 
   const [districts, streets, shops, units] = await Promise.all([
     prisma.district.count(),

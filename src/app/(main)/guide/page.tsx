@@ -29,7 +29,7 @@ export default async function GuidePage() {
       <section className="space-y-4">
         <h2 className="font-serif text-xl font-semibold">第二步：选择街道</h2>
         <p className="text-stone-600">
-          每个区域有 8 条街道。进入街道后可看到两侧铺位与公寓楼的三维街景，以及详细的入驻列表。
+          每个区域有 8 条街道。进入街道后可看到前排金色店铺与后排 30 栋蓝灰公寓塔楼的三维街景（卡通边线风格），以及详细的入驻列表。
         </p>
       </section>
 
@@ -63,10 +63,13 @@ export default async function GuidePage() {
         </ul>
       </section>
 
-      <section className="rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600">
+      <section className="rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600 space-y-2">
         <p>
           演示店铺：<Link href="/shop/shudong-coffee" className="text-accent hover:underline">树洞咖啡</Link>
-          （解放碑大道）· 演示账号 demo@alphachongqing.local / demo1234
+          （解放碑大道）· 账号 demo@alphachongqing.local / demo1234
+        </p>
+        <p>
+          演示公寓：洪崖洞巷 3 号楼（街景后排可见）· 账号 apt@alphachongqing.local / apt1234
         </p>
       </section>
     </div>

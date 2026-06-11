@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getShopBySlug } from "@/lib/queries";
+import { getShopBySlug, getShopRoomBySlug } from "@/lib/queries";
 import { roomSlugToType } from "@/lib/rooms";
 import { ROOM_LABELS } from "@/lib/chongqing/geo";
 import { RoomNav } from "@/components/shop/RoomNav";
@@ -22,55 +22,59 @@ export default async function ShopRoomPage({
   const roomType = roomSlugToType(roomSlug);
   if (!roomType) notFound();
 
-  const [shop, session] = await Promise.all([getShopBySlug(slug), auth()]);
-  if (!shop) notFound();
+  const [shop, room, session] = await Promise.all([
+    getShopBySlug(slug),
+    getShopRoomBySlug(slug, roomType),
+    auth(),
+  ]);
+  if (!shop || !room) notFound();
 
-  const room = shop.rooms.find((r) => r.roomType === roomType);
-  if (!room) notFound();
-
-  const isOwner = session?.user?.id === shop.ownerId;
+  const isOwner = session?.user?.id === room.shop.ownerId;
   const ownerArticles =
     isOwner && roomType !== "SIDE_ROOM"
       ? await prisma.post.findMany({
-          where: { authorId: shop.ownerId, type: "ARTICLE" },
+          where: { authorId: room.shop.ownerId, type: "ARTICLE" },
           orderBy: { createdAt: "desc" },
+          select: { id: true, title: true, type: true },
         })
       : [];
   const guestbook =
     roomType === "SIDE_ROOM"
       ? await prisma.guestbookEntry.findMany({
-          where: { shopId: shop.id },
+          where: { shopId: room.shop.id },
           orderBy: { createdAt: "desc" },
           take: 30,
-          include: { author: true },
+          include: {
+            author: { select: { username: true, displayName: true } },
+          },
         })
       : [];
 
   return (
     <div className="space-y-6">
       <nav className="text-sm text-stone-500">
-        <Link href={`/shop/${shop.slug}`} className="hover:text-stone-800">
-          {shop.name}
+        <Link href={`/shop/${room.shop.slug}`} className="hover:text-stone-800">
+          {room.shop.name}
         </Link>
         <span className="mx-2">/</span>
         <span className="text-stone-800">{room.displayName}</span>
       </nav>
 
-      <RoomNav shopSlug={shop.slug} rooms={shop.rooms} activeRoomType={roomType} />
+      <RoomNav shopSlug={room.shop.slug} rooms={shop.rooms} activeRoomType={roomType} />
 
       <header>
         <h1 className="font-serif text-2xl font-semibold">
           {room.displayName}
         </h1>
         <p className="text-sm text-stone-500">
-          {ROOM_LABELS[roomType]} · {shop.name}
+          {ROOM_LABELS[roomType]} · {room.shop.name}
         </p>
       </header>
 
       {roomType === "SIDE_ROOM" ? (
         <section>
           <p className="mb-4 text-stone-600">侧室是留言板，欢迎留下你的话。</p>
-          {session?.user && <GuestbookForm shopId={shop.id} />}
+          {session?.user && <GuestbookForm shopId={room.shop.id} />}
           <ul className="mt-4 space-y-2">
             {guestbook.map((entry) => (
               <li key={entry.id} className="rounded border-l-2 border-accent bg-paper px-4 py-2">
@@ -94,9 +98,6 @@ export default async function ShopRoomPage({
                   >
                     {rc.post.title}
                   </Link>
-                  <time className="text-xs text-stone-400">
-                    {formatDate(rc.post.createdAt)}
-                  </time>
                   <div
                     className="mt-3"
                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(rc.post.body) }}

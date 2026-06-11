@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getStreetBySlug, getUserResidence } from "@/lib/queries";
-import { StreetView } from "@/components/map/StreetView";
+import { StreetViewLoader } from "@/components/map/StreetViewLoader";
 import { ShopSlotCard } from "@/components/shop/ShopSlotCard";
 import { ApartmentPicker } from "@/components/shop/ApartmentPicker";
 import { ResidenceBanner } from "@/components/residence/ResidenceBanner";
@@ -10,7 +10,7 @@ import { StreetMessageForm } from "@/components/street/StreetMessageForm";
 import { formatDate } from "@/lib/utils";
 import { decodeRouteSlug } from "@/lib/route-slug";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function StreetPage({
   params,
@@ -32,6 +32,10 @@ export default async function StreetPage({
 
   const shopSlots = street.shopSlots.filter((s) => !s.isCenter);
   const occupiedShops = shopSlots.filter((s) => s.status === "OCCUPIED").length;
+  const occupiedApts = street.apartmentSummaries.reduce(
+    (sum, b) => sum + b.occupiedCount,
+    0,
+  );
 
   return (
     <div className="space-y-8">
@@ -49,7 +53,8 @@ export default async function StreetPage({
         <h1 className="font-serif text-3xl font-semibold">{street.nameZh}</h1>
         {street.summary && <p className="mt-2 text-stone-600">{street.summary}</p>}
         <p className="mt-2 text-sm text-stone-500">
-          已开业 {occupiedShops}/{shopSlots.length} 家店铺 · {street.apartmentBuildings.length} 栋公寓楼
+          已开业 {occupiedShops}/{shopSlots.length} 家店铺 · {occupiedApts} 户公寓入住 ·{" "}
+          {street.apartmentBuildings.length} 栋公寓楼
         </p>
       </header>
 
@@ -57,8 +62,15 @@ export default async function StreetPage({
 
       <section>
         <h2 className="mb-2 font-serif text-lg font-semibold">街景</h2>
-        <p className="mb-3 text-xs text-stone-500">金色为已开业，灰色为招租中</p>
-        <StreetView streetName={street.nameZh} slots={street.shopSlots} />
+        <p className="mb-3 text-xs text-stone-500">
+          前排金色为店铺，后排蓝灰色为 30 栋公寓塔楼（入住越多楼越高）
+        </p>
+        <StreetViewLoader
+          streetName={street.nameZh}
+          streetSlug={street.slug}
+          slots={street.shopSlots}
+          apartmentBuildings={street.apartmentSummaries}
+        />
       </section>
 
       <section>
@@ -89,7 +101,7 @@ export default async function StreetPage({
         </ul>
       </section>
 
-      <section>
+      <section id="apartment">
         <h2 className="mb-4 font-serif text-lg font-semibold">公寓楼</h2>
         <ApartmentPicker
           buildings={street.apartmentBuildings}
@@ -101,14 +113,23 @@ export default async function StreetPage({
             各楼入住概况
           </summary>
           <ul className="mt-2 grid gap-2 text-sm sm:grid-cols-3">
-            {street.apartmentBuildings.map((b) => {
-              const occupied = b.units.filter((u) => u.residentId).length;
-              return (
-                <li key={b.id} className="text-stone-500">
-                  {b.buildingNumber} 号楼：{occupied}/{b.units.length} 已入住
-                </li>
-              );
-            })}
+            {street.apartmentSummaries.map((b) => (
+              <li key={b.id} className="text-stone-500">
+                {b.buildingNumber} 号楼：{b.occupiedCount}/{b.totalUnits} 已入住
+                {b.sampleUnitId && (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <Link
+                      href={`/apartment/${b.sampleUnitId}`}
+                      className="text-accent hover:underline"
+                    >
+                      看房
+                    </Link>
+                  </>
+                )}
+              </li>
+            ))}
           </ul>
         </details>
       </section>

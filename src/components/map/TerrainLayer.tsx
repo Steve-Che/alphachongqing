@@ -1,5 +1,7 @@
 "use client";
 
+import { SketchEdges, ToonFaceMaterial } from "./sketchup-materials";
+
 /** 平整基底，避免区划 mesh 与起伏地形穿插 */
 export function TerrainLayer() {
   return (
@@ -10,7 +12,8 @@ export function TerrainLayer() {
       renderOrder={0}
     >
       <planeGeometry args={[120, 120]} />
-      <meshStandardMaterial color="#6b7c5e" roughness={0.92} />
+      <ToonFaceMaterial color="#6b7c5e" />
+      <SketchEdges threshold={5} />
     </mesh>
   );
 }

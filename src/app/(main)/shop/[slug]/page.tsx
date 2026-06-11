@@ -27,10 +27,18 @@ export default async function ShopPage({
     include: { author: true },
   });
 
-  const isOwner = session?.user?.id === shop.ownerId;
+  const isOwner = session?.user?.id === shop.owner.id;
   const street = shop.shopSlot.street;
   const district = street.district;
   const frontRoom = shop.rooms.find((r) => r.roomType === "FRONT_HALL");
+  const frontContents = frontRoom
+    ? await prisma.roomContent.findMany({
+        where: { shopRoomId: frontRoom.id },
+        include: {
+          post: { select: { id: true, title: true, body: true } },
+        },
+      })
+    : [];
 
   return (
     <div className="space-y-8">
@@ -76,8 +84,8 @@ export default async function ShopPage({
       {frontRoom && (
         <section>
           <h2 className="mb-3 font-serif text-lg font-semibold">前厅</h2>
-          {frontRoom.roomContents.length > 0 ? (
-            frontRoom.roomContents.map((rc) =>
+          {frontContents.length > 0 ? (
+            frontContents.map((rc) =>
               rc.post ? (
                 <article key={rc.id} className="rounded-lg border border-stone-200 bg-paper p-5">
                   <Link

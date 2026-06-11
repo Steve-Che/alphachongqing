@@ -1,4 +1,10 @@
 import { DISTRICTS, type DistrictGeo, type GeoPoint } from "./geo";
+import {
+  STREET_PICK_RADIUS,
+  getStreetWorldPosition,
+} from "./district-street-grid";
+
+export { getStreetWorldPosition, STREET_PICK_RADIUS };
 
 /** 射线法判断点是否在多边形内 */
 export function pointInPolygon(point: GeoPoint, polygon: GeoPoint[]): boolean {
@@ -34,24 +40,6 @@ export function findDistrictAt(x: number, z: number): DistrictGeo | null {
     polygonArea(a.boundary) <= polygonArea(b.boundary) ? a : b,
   );
 }
-
-/** 街道在区内的布局坐标 */
-export function getStreetWorldPosition(
-  districtSlug: string,
-  sortOrder: number,
-): GeoPoint {
-  const district = DISTRICTS.find((d) => d.slug === districtSlug);
-  if (!district) return { x: 0, z: 0 };
-  const cols = 4;
-  const row = Math.floor(sortOrder / cols);
-  const col = sortOrder % cols;
-  return {
-    x: district.center.x + (col - 1.5) * 7,
-    z: district.center.z + (row - 1) * 6,
-  };
-}
-
-const STREET_PICK_RADIUS = 3.2;
 
 export function findStreetAt(
   x: number,

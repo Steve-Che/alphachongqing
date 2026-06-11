@@ -118,7 +118,10 @@ export async function rentApartment(
 
   try {
     const unit = await prisma.$transaction(async (tx) => {
-      const apt = await tx.apartmentUnit.findUnique({ where: { id: unitId } });
+      const apt = await tx.apartmentUnit.findUnique({
+        where: { id: unitId },
+        include: { building: { include: { street: true } } },
+      });
       if (!apt || apt.residentId) throw new Error("该公寓位已被占用");
 
       const updated = await tx.apartmentUnit.update({
@@ -131,11 +134,13 @@ export async function rentApartment(
         data: { residenceType: "APARTMENT" },
       });
 
-      return updated;
+      return { unit: updated, streetSlug: apt.building.street.slug };
     });
 
-    revalidatePath(`/apartment/${unit.id}`);
-    return { ok: true, data: { id: unit.id } };
+    revalidatePath(`/apartment/${unit.unit.id}`);
+    revalidatePath(`/street/${unit.streetSlug}`);
+    revalidatePath("/");
+    return { ok: true, data: { id: unit.unit.id } };
   } catch (e) {
     return {
       ok: false,

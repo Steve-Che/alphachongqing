@@ -3,29 +3,41 @@
 import Link from "next/link";
 import { encodeRouteSlug } from "@/lib/route-slug";
 import { StreetScene, type StreetSlotData } from "./StreetScene";
+import type { ApartmentBuildingData } from "./ApartmentTowers";
 
 export type { StreetSlotData };
 
 type StreetScene3DProps = {
   slots: StreetSlotData[];
+  apartmentBuildings?: ApartmentBuildingData[];
   selectedSlotId?: string | null;
+  selectedBuildingNumber?: number | null;
   onSlotHover?: (slotId: string | null) => void;
   onSlotSelect?: (slotId: string | null) => void;
+  onBuildingHover?: (buildingNumber: number | null) => void;
+  onBuildingSelect?: (buildingNumber: number | null) => void;
 };
 
 export function StreetScene3D({
   slots,
+  apartmentBuildings = [],
   selectedSlotId,
+  selectedBuildingNumber,
   onSlotHover,
   onSlotSelect,
+  onBuildingHover,
+  onBuildingSelect,
 }: StreetScene3DProps) {
   return (
     <StreetScene
       slots={slots}
+      apartmentBuildings={apartmentBuildings}
       selectedSlotId={selectedSlotId}
+      selectedBuildingNumber={selectedBuildingNumber}
       onSlotHover={onSlotHover}
       onSlotSelect={onSlotSelect}
-      showSlotLabels={false}
+      onBuildingHover={onBuildingHover}
+      onBuildingSelect={onBuildingSelect}
     />
   );
 }

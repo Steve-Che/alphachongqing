@@ -38,6 +38,10 @@ export default async function HomePage() {
             <dt className="inline">文章 </dt>
             <dd className="inline font-medium text-stone-800">{stats.posts}</dd>
           </div>
+          <div>
+            <dt className="inline">公寓入住 </dt>
+            <dd className="inline font-medium text-stone-800">{stats.apartmentResidents}</dd>
+          </div>
         </dl>
       </section>
 

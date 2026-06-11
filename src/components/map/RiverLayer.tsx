@@ -2,8 +2,15 @@
 
 import { RIVERS } from "@/lib/chongqing/geo";
 import * as THREE from "three";
+import { SketchEdges, ToonFaceMaterial } from "./sketchup-materials";
 
-function River({ points, color }: { points: { x: number; z: number }[]; color: string }) {
+function River({
+  points,
+  color,
+}: {
+  points: { x: number; z: number }[];
+  color: string;
+}) {
   const shape = new THREE.Shape();
   const width = 2.5;
 
@@ -26,15 +33,14 @@ function River({ points, color }: { points: { x: number; z: number }[]; color: s
   shape.closePath();
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.08, 0]} raycast={() => null}>
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, 0.08, 0]}
+      raycast={() => null}
+    >
       <shapeGeometry args={[shape]} />
-      <meshStandardMaterial
-        color={color}
-        transparent
-        opacity={0.55}
-        roughness={0.2}
-        metalness={0.1}
-      />
+      <ToonFaceMaterial color={color} />
+      <SketchEdges threshold={8} />
     </mesh>
   );
 }
@@ -42,8 +48,8 @@ function River({ points, color }: { points: { x: number; z: number }[]; color: s
 export function RiverLayer() {
   return (
     <group>
-      <River points={RIVERS.yangtze} color="#4a7c9b" />
-      <River points={RIVERS.jialing} color="#5a8cad" />
+      <River points={RIVERS.yangtze} color="#5a8cad" />
+      <River points={RIVERS.jialing} color="#6a9cbd" />
     </group>
   );
 }

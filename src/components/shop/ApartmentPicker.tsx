@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { RentApartmentButton } from "./RentApartmentButton";
 
@@ -26,6 +27,7 @@ export function ApartmentPicker({
   const [buildingId, setBuildingId] = useState(buildings[0]?.id ?? "");
   const building = buildings.find((b) => b.id === buildingId);
   const vacantUnits = building?.units.filter((u) => !u.residentId) ?? [];
+  const occupiedUnits = building?.units.filter((u) => u.residentId) ?? [];
   const [unitId, setUnitId] = useState(vacantUnits[0]?.id ?? "");
 
   if (!canRent) {
@@ -85,6 +87,19 @@ export function ApartmentPicker({
       </div>
 
       {unitId && <RentApartmentButton unitId={unitId} />}
+
+      {occupiedUnits.length > 0 && (
+        <ul className="space-y-1 border-t border-stone-200 pt-3 text-sm text-stone-600">
+          <li className="text-xs text-stone-400">本楼已入住（可参观）</li>
+          {occupiedUnits.slice(0, 8).map((u) => (
+            <li key={u.id}>
+              <Link href={`/apartment/${u.id}`} className="text-accent hover:underline">
+                {u.unitNumber} 室 · {u.resident?.displayName ?? u.resident?.username}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
