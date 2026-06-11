@@ -14,18 +14,22 @@ export function StreetMessageForm({ streetId }: { streetId: string }) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setLoading(true);
     setError("");
-    const fd = new FormData(e.currentTarget);
-    const result = await addStreetMessage(streetId, fd.get("content") as string);
-    if (result.ok) {
-      e.currentTarget.reset();
-      toast.success("街道留言已发布");
-      router.refresh();
-    } else {
-      setError(result.error);
+    const fd = new FormData(form);
+    try {
+      const result = await addStreetMessage(streetId, fd.get("content") as string);
+      if (result.ok) {
+        form.reset();
+        toast.success("街道留言已发布");
+        router.refresh();
+      } else {
+        setError(result.error);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (

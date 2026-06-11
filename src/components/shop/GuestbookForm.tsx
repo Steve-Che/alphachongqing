@@ -14,18 +14,22 @@ export function GuestbookForm({ shopId }: { shopId: string }) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setLoading(true);
     setError("");
-    const fd = new FormData(e.currentTarget);
-    const result = await addGuestbookEntry(shopId, fd.get("content") as string);
-    if (result.ok) {
-      e.currentTarget.reset();
-      toast.success("留言已发送");
-      router.refresh();
-    } else {
-      setError(result.error);
+    const fd = new FormData(form);
+    try {
+      const result = await addGuestbookEntry(shopId, fd.get("content") as string);
+      if (result.ok) {
+        form.reset();
+        toast.success("留言已发送");
+        router.refresh();
+      } else {
+        setError(result.error);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (

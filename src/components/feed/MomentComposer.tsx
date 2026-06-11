@@ -42,23 +42,28 @@ export function MomentComposer({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setLoading(true);
     setError("");
-    const fd = new FormData(e.currentTarget);
-    const result = await createMoment({
-      body: fd.get("body") as string,
-      imageUrls: images,
-      streetId: streetId || undefined,
-    });
-    if (result.ok) {
-      e.currentTarget.reset();
-      setImages([]);
-      toast.success("短文已发布");
-      router.refresh();
-    } else {
-      setError(result.error);
+    const fd = new FormData(form);
+    try {
+      const result = await createMoment({
+        body: fd.get("body") as string,
+        imageUrls: images,
+        streetId: streetId || undefined,
+      });
+      if (result.ok) {
+        form.reset();
+        setImages([]);
+        setStreetId(defaultStreetId ?? "");
+        toast.success("短文已发布");
+        router.refresh();
+      } else {
+        setError(result.error);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (

@@ -31,30 +31,34 @@ export function CommentForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setLoading(true);
     setError("");
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData(form);
     const body = fd.get("body") as string;
-    const result = await addComment({
-      body,
-      postId,
-      guestbookEntryId,
-      streetMessageId,
-      parentId,
-    });
-    if (result.ok) {
-      e.currentTarget.reset();
-      toast.success(parentId ? "回复已发送" : "评论已发表");
-      dispatchNotificationsUpdated();
-      if (onSuccess && result.data) {
-        onSuccess({ id: result.data.id, body: body.trim(), parentId: parentId ?? null });
+    try {
+      const result = await addComment({
+        body,
+        postId,
+        guestbookEntryId,
+        streetMessageId,
+        parentId,
+      });
+      if (result.ok) {
+        form.reset();
+        toast.success(parentId ? "回复已发送" : "评论已发表");
+        dispatchNotificationsUpdated();
+        if (onSuccess && result.data) {
+          onSuccess({ id: result.data.id, body: body.trim(), parentId: parentId ?? null });
+        } else {
+          router.refresh();
+        }
       } else {
-        router.refresh();
+        setError(result.error);
       }
-    } else {
-      setError(result.error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (

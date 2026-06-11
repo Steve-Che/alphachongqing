@@ -24,22 +24,26 @@ export function OpenShopForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setLoading(true);
     setError("");
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData(form);
     const name = fd.get("name") as string;
     const tagline = fd.get("tagline") as string;
-    const result = await openShop(shopSlotId, name, tagline);
-    if (result.ok && result.data) {
-      setShopSlug(result.data.slug);
-      setModalOpen(true);
-      toast.success("店铺开业啦！");
-      onSuccess?.(result.data.slug);
-      e.currentTarget.reset();
-    } else {
-      setError(result.ok ? "开店失败" : result.error);
+    try {
+      const result = await openShop(shopSlotId, name, tagline);
+      if (result.ok && result.data) {
+        setShopSlug(result.data.slug);
+        setModalOpen(true);
+        toast.success("店铺开业啦！");
+        onSuccess?.(result.data.slug);
+        form.reset();
+      } else {
+        setError(result.ok ? "开店失败" : result.error);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
