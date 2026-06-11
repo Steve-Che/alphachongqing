@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { updateShopSettings } from "@/app/actions/shop";
 import { uploadImage } from "@/lib/upload-client";
+import { ShopCoverPresetPicker } from "@/components/shop/ShopCoverPresetPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,7 +64,11 @@ export function ShopSettingsForm({ shop }: ShopSettingsFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded border border-stone-200 bg-paper p-4">
+    <form
+      id="shop"
+      onSubmit={handleSubmit}
+      className="scroll-mt-20 space-y-4 rounded border border-stone-200 bg-paper p-4"
+    >
       <h2 className="font-serif text-lg font-semibold">店铺设置</h2>
       {error && (
         <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
@@ -79,6 +84,11 @@ export function ShopSettingsForm({ shop }: ShopSettingsFormProps) {
           />
         )}
         <Input type="file" accept="image/*" onChange={handleCoverChange} disabled={loading} />
+        <ShopCoverPresetPicker
+          value={coverUrl}
+          onChange={setCoverUrl}
+          disabled={loading}
+        />
       </div>
       <Input name="name" defaultValue={shop.name} placeholder="店铺名称" required />
       <Textarea

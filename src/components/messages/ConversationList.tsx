@@ -3,7 +3,7 @@ import { formatDate } from "@/lib/utils";
 
 type ConversationRow = {
   id: string;
-  updatedAt: Date;
+  updatedAt: string;
   participants: {
     username: string;
     displayName: string | null;
@@ -11,7 +11,7 @@ type ConversationRow = {
   }[];
   lastMessage: {
     body: string;
-    createdAt: Date;
+    createdAt: string;
     sender: { username: string; displayName: string | null };
   } | null;
   unread: boolean;
@@ -50,7 +50,7 @@ export function ConversationList({
                 <p className="mt-0.5 truncate text-sm text-stone-500">{preview}</p>
               </div>
               <time className="shrink-0 text-xs text-stone-400">
-                {formatDate(c.updatedAt)}
+                {formatDate(new Date(c.updatedAt))}
               </time>
             </Link>
           </li>

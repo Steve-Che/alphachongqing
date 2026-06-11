@@ -7,6 +7,7 @@ import { MessageWithReplies } from "@/components/social/MessageWithReplies";
 import { RoomFloorPlan } from "@/components/shop/RoomFloorPlan";
 import { GuestbookForm } from "@/components/shop/GuestbookForm";
 import { roomTypeToSlug } from "@/lib/rooms";
+import { ShopCoverDisplay } from "@/components/shop/ShopCoverDisplay";
 import { encodeRouteSlug, shopPath } from "@/lib/route-slug";
 
 export const revalidate = 60;
@@ -72,23 +73,34 @@ export default async function ShopPage({
         <span className="text-stone-800">{shop.name}</span>
       </nav>
 
-      <header className="rounded-lg border border-stone-200 bg-paper p-6">
-        <p className="text-xs text-stone-400">店铺 · {street.nameZh}</p>
-        <h1 className="font-serif text-3xl font-semibold">{shop.name}</h1>
-        {shop.tagline && <p className="mt-2 text-stone-600">{shop.tagline}</p>}
-        <p className="mt-3 text-sm text-stone-500">
-          店主：
-          <Link href={`/u/${shop.owner.username}`} className="text-accent hover:underline">
-            {shop.owner.displayName ?? shop.owner.username}
-          </Link>
-        </p>
-        {isOwner && (
-          <div className="mt-4 flex flex-wrap gap-3 text-sm">
-            <Link href="/write/article" className="text-accent hover:underline">
-              写长文并挂载到房间
+      <header className="overflow-hidden rounded-lg border border-stone-200 bg-paper">
+        <ShopCoverDisplay
+          shopId={shop.id}
+          name={shop.name}
+          coverUrl={shop.coverUrl}
+          banner
+        />
+        <div className="p-6">
+          <p className="text-xs text-stone-400">店铺 · {street.nameZh}</p>
+          <h1 className="font-serif text-3xl font-semibold">{shop.name}</h1>
+          {shop.tagline && <p className="mt-2 text-stone-600">{shop.tagline}</p>}
+          <p className="mt-3 text-sm text-stone-500">
+            店主：
+            <Link href={`/u/${shop.owner.username}`} className="text-accent hover:underline">
+              {shop.owner.displayName ?? shop.owner.username}
             </Link>
-          </div>
-        )}
+          </p>
+          {isOwner && (
+            <div className="mt-4 flex flex-wrap gap-3 text-sm">
+              <Link href="/settings#shop" className="text-[#b84a2f] hover:underline">
+                编辑门头
+              </Link>
+              <Link href="/write/article" className="text-accent hover:underline">
+                写长文并挂载到房间
+              </Link>
+            </div>
+          )}
+        </div>
       </header>
 
       <section>

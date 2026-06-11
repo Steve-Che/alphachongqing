@@ -28,7 +28,7 @@ export default async function HomePage() {
           阿尔法重庆
         </h1>
         <p className="mt-2 max-w-2xl text-stone-600">
-          一座虚拟的山城。在三维地图上缩放漫游，从城区下钻到街道与铺面，
+          一座虚拟的山城。在三维或平面地图上漫游，从城区下钻到街道与铺面，
           在地图上落脚，写下长文与短文，慢慢认识邻居。
         </p>
         <dl className="mt-4 flex flex-wrap gap-6 text-sm text-stone-500">

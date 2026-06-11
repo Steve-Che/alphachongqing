@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { ShopCoverDisplay } from "@/components/shop/ShopCoverDisplay";
 import { ShopActivityBubble } from "@/components/street/ShopActivityBubble";
 import { shopPath } from "@/lib/route-slug";
 import type { StreetStripSlot } from "@/lib/street-types";
@@ -19,21 +19,13 @@ export function StreetShopCard({ slot }: StreetShopCardProps) {
         href={shopPath(shop.slug)}
         className="group block w-[168px] overflow-hidden rounded-lg border border-stone-300 bg-[#faf6ee] shadow-sm transition hover:border-[#c45c3e]/50 hover:shadow-md sm:w-[188px]"
       >
-        <div className="relative aspect-[4/3] bg-stone-200">
-          {shop.coverUrl ? (
-            <Image
-              src={shop.coverUrl}
-              alt={shop.name}
-              fill
-              className="object-cover"
-              sizes="188px"
-              unoptimized
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center bg-gradient-to-b from-stone-100 to-stone-200 text-3xl text-stone-400">
-              店
-            </div>
-          )}
+        <div className="relative aspect-[4/3] overflow-hidden bg-stone-200">
+          <ShopCoverDisplay
+            shopId={shop.id}
+            name={shop.name}
+            coverUrl={shop.coverUrl}
+            sizes="188px"
+          />
           <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#e07a3a] text-xs font-semibold text-white shadow">
             {displayNumber}
           </span>

@@ -24,6 +24,7 @@ export async function openShop(
   shopSlotId: string,
   name: string,
   tagline?: string,
+  coverUrl?: string | null,
 ): Promise<ActionResult<{ slug: string }>> {
   const user = await getSessionUser();
   if (!user) return { ok: false, error: "请先登录" };
@@ -67,6 +68,7 @@ export async function openShop(
           name: trimmedName,
           slug,
           tagline: tagline?.trim() || null,
+          coverUrl: coverUrl?.trim() || null,
           shopSlotId,
           ownerId: user.id,
         },

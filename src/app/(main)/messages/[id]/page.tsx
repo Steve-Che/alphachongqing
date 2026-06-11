@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getDirectMessages } from "@/lib/queries";
-import { markConversationRead } from "@/app/actions/messages";
+import { markConversationReadSilent } from "@/lib/messages";
 import { DirectMessageComposer } from "@/components/messages/DirectMessageComposer";
+import { MarkConversationRead } from "@/components/messages/MarkConversationRead";
 import { formatDate } from "@/lib/utils";
 
 export default async function ConversationPage({
@@ -15,7 +16,7 @@ export default async function ConversationPage({
   if (!session?.user?.id) redirect("/login");
 
   const { id } = await params;
-  await markConversationRead(id);
+  await markConversationReadSilent(id, session.user.id);
 
   const data = await getDirectMessages(id, session.user.id);
   if (!data) notFound();
@@ -25,6 +26,7 @@ export default async function ConversationPage({
 
   return (
     <div className="space-y-4">
+      <MarkConversationRead conversationId={id} />
       <nav className="text-sm text-stone-500">
         <Link href="/messages" className="hover:text-stone-800">
           私信

@@ -2,18 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { CityMapLoader, type MapDistrictData } from "@/components/map/CityMapLoader";
+import { CityMap2D, type Map2DDistrictData } from "@/components/map/CityMap2D";
 import { DistrictList } from "@/components/map/DistrictList";
 
 type DistrictListItem = Parameters<typeof DistrictList>[0]["districts"][number];
+
+type MapMode = "3d" | "2d" | "list";
 
 export function MapViewToggle({
   mapData,
   districtList,
 }: {
-  mapData: MapDistrictData[];
+  mapData: Map2DDistrictData[];
   districtList: DistrictListItem[];
 }) {
-  const [mode, setMode] = useState<"3d" | "list">("3d");
+  const [mode, setMode] = useState<MapMode>("3d");
   const [webglFailed, setWebglFailed] = useState(false);
 
   useEffect(() => {
@@ -27,12 +30,16 @@ export function MapViewToggle({
     }
   }, []);
 
-  const effectiveMode = webglFailed ? "list" : mode;
+  const effectiveMode: MapMode = webglFailed
+    ? mode === "3d"
+      ? "2d"
+      : mode
+    : mode;
 
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="font-serif text-lg font-semibold">三维城市地图</h2>
+        <h2 className="font-serif text-lg font-semibold">城市地图</h2>
         <div className="flex gap-1 rounded border border-stone-200 bg-paper p-0.5 text-xs">
           <button
             type="button"
@@ -46,6 +53,18 @@ export function MapViewToggle({
             aria-label="三维地图模式"
           >
             3D 地图
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("2d")}
+            className={`rounded px-2 py-1 ${
+              effectiveMode === "2d"
+                ? "bg-stone-800 text-white"
+                : "text-stone-600 hover:bg-stone-100"
+            }`}
+            aria-label="平面地图模式"
+          >
+            2D 地图
           </button>
           <button
             type="button"
@@ -63,11 +82,13 @@ export function MapViewToggle({
       </div>
       {webglFailed && (
         <p className="mb-2 text-xs text-amber-800">
-          当前设备不支持 WebGL，已自动切换为列表模式。
+          当前设备不支持 WebGL，已推荐使用 2D 平面地图。
         </p>
       )}
       {effectiveMode === "3d" ? (
-        <CityMapLoader districts={mapData} />
+        <CityMapLoader districts={mapData as MapDistrictData[]} />
+      ) : effectiveMode === "2d" ? (
+        <CityMap2D districts={mapData} />
       ) : (
         <DistrictList districts={districtList} />
       )}

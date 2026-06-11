@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/db";
+import { DISTRICTS } from "@/lib/chongqing/geo";
 import { decodeRouteSlug } from "@/lib/route-slug";
 import { getApartmentRanges } from "@/lib/apartment-ranges";
 import { formatShopBubble } from "@/lib/street-activity";
@@ -376,10 +377,17 @@ export async function getHomePageData() {
     apartmentResidents,
   };
 
-  const mapData = districts.map((d) => ({
+  const geoBySlug = new Map(DISTRICTS.map((g) => [g.slug, g]));
+
+  const mapData = districts.map((d) => {
+    const geo = geoBySlug.get(d.slug);
+    return {
     slug: d.slug,
     nameZh: d.nameZh,
     summary: d.summary,
+    center: geo?.center ?? { x: 0, z: 0 },
+    color: geo?.color ?? "#8B7355",
+    boundary: geo?.boundary ?? [],
     streets: d.streets.map((s) => {
       const unitsPerBuilding = s.apartmentBuildings[0]?.units.length ?? 50;
       const apartmentBuildings = toBuildingSummaries(
@@ -415,7 +423,8 @@ export async function getHomePageData() {
         },
       };
     }),
-  }));
+  };
+  });
 
   return { districtList: districts, mapData, stats };
 }
@@ -1161,9 +1170,15 @@ export async function getConversations(userId: string) {
 
     return {
       id: p.conversation.id,
-      updatedAt: p.conversation.updatedAt,
+      updatedAt: p.conversation.updatedAt.toISOString(),
       participants: others.map((x) => x.user),
-      lastMessage,
+      lastMessage: lastMessage
+        ? {
+            body: lastMessage.body,
+            createdAt: lastMessage.createdAt.toISOString(),
+            sender: lastMessage.sender,
+          }
+        : null,
       unread: !!unread,
     };
   });

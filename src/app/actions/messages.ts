@@ -60,15 +60,19 @@ export async function sendDirectMessage(
   });
 
   await Promise.all(
-    recipients.map((r) =>
-      createNotification({
-        userId: r.userId,
-        type: "MESSAGE",
-        actorId: user.id,
-        href: `/messages/${conversationId}`,
-        body: trimmed.slice(0, 80),
-      }),
-    ),
+    recipients.map(async (r) => {
+      try {
+        await createNotification({
+          userId: r.userId,
+          type: "MESSAGE",
+          actorId: user.id,
+          href: `/messages/${conversationId}`,
+          body: trimmed.slice(0, 80),
+        });
+      } catch {
+        /* 通知失败不影响私信发送 */
+      }
+    }),
   );
 
   revalidatePath("/messages");
