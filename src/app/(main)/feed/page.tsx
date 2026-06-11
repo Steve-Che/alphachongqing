@@ -4,12 +4,13 @@ import { auth } from "@/lib/auth";
 import { getFollowingFeed, getRecommendedUsers } from "@/lib/queries";
 import { FeedList } from "@/components/feed/FeedList";
 import { FollowButton } from "@/components/social/FollowButton";
+import { FollowBatchButton } from "@/components/feed/FollowBatchButton";
 import { prisma } from "@/lib/db";
 import { AuthorLink } from "@/components/social/AuthorLink";
 
 export default async function FeedPage() {
   const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  if (!session?.user?.id) redirect("/login?callbackUrl=/feed");
 
   const [{ items, nextCursor }, recommended] = await Promise.all([
     getFollowingFeed(session.user.id),
@@ -40,6 +41,11 @@ export default async function FeedPage() {
         <div className="space-y-6">
           <div className="rounded border border-dashed border-stone-300 bg-paper p-6 text-center text-stone-500">
             <p>还没有动态。可以先关注这些街坊：</p>
+            {recommended.length > 0 && (
+              <div className="mt-3">
+                <FollowBatchButton userIds={recommended.map((u) => u.id)} />
+              </div>
+            )}
           </div>
           {recommended.length > 0 && (
             <ul className="space-y-3">

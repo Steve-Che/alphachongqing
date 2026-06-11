@@ -21,7 +21,7 @@ type Post = {
   };
   street?: { nameZh: string; slug: string } | null;
   images?: { url: string }[];
-  _count?: { likes: number };
+  _count?: { likes: number; comments?: number };
 };
 
 export function PostList({
@@ -102,7 +102,7 @@ export function PostList({
                   <Link key={img.url} href={`/moment/${post.id}`}>
                     <PostImage
                       src={img.url}
-                      alt=""
+                      alt="用户配图"
                       className="h-24 rounded object-cover"
                       width={96}
                       height={96}
@@ -111,12 +111,20 @@ export function PostList({
                 ))}
               </div>
             )}
-            <div className="mt-2">
+            <div className="mt-2 flex items-center gap-3">
               <LikeButton
                 postId={post.id}
                 initialLiked={likedPostIds?.has(post.id) ?? false}
                 initialCount={post._count?.likes ?? 0}
               />
+              {(post._count?.comments ?? 0) > 0 && (
+                <Link
+                  href={`/moment/${post.id}#comments`}
+                  className="text-xs text-stone-400 hover:text-stone-600"
+                >
+                  {post._count?.comments} 条评论
+                </Link>
+              )}
             </div>
           </article>
         ),

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_SC, Noto_Serif_SC } from "next/font/google";
+import { siteName, siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const notoSans = Noto_Sans_SC({
@@ -15,7 +16,8 @@ const notoSerif = Noto_Serif_SC({
 });
 
 export const metadata: Metadata = {
-  title: "阿尔法重庆",
+  metadataBase: new URL(siteUrl),
+  title: siteName,
   description: "一座致敬阿尔法城的 3D 虚拟城市社交平台",
 };
 

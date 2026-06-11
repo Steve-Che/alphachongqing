@@ -39,7 +39,7 @@ export function NotificationList({
         />
       )}
       listClassName="space-y-2"
-      emptyMessage="暂无通知。"
+      emptyMessage="暂无通知。有人关注你、评论或点赞时会收到提醒。"
     />
   );
 }

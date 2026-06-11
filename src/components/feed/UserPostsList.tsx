@@ -3,31 +3,36 @@
 import { useState } from "react";
 import { PostList } from "@/components/feed/PostList";
 import { Button } from "@/components/ui/button";
-import { loadMoreFollowingFeed } from "@/app/actions/social";
+import { loadMoreUserPosts } from "@/app/actions/social";
 
-type FeedPost = Parameters<typeof PostList>[0]["posts"][number];
+type Post = Parameters<typeof PostList>[0]["posts"][number];
 
-export function FeedList({
+export function UserPostsList({
+  username,
   initialPosts,
   initialCursor,
-  likedPostIds,
+  showDelete,
+  postType,
+  emptyMessage = "还没有内容。",
 }: {
-  initialPosts: FeedPost[];
+  username: string;
+  initialPosts: Post[];
   initialCursor: string | null;
-  likedPostIds?: string[];
+  showDelete?: boolean;
+  postType?: "ARTICLE" | "MOMENT";
+  emptyMessage?: string;
 }) {
   const [posts, setPosts] = useState(initialPosts);
   const [cursor, setCursor] = useState(initialCursor);
-  const [likedSet, setLikedSet] = useState(new Set(likedPostIds ?? []));
   const [loading, setLoading] = useState(false);
 
   if (posts.length === 0) {
-    return <p className="text-stone-500">还没有动态。</p>;
+    return <p className="text-stone-500">{emptyMessage}</p>;
   }
 
   return (
     <div>
-      <PostList posts={posts} likedPostIds={likedSet} />
+      <PostList posts={posts} showDelete={showDelete} />
       {cursor && (
         <div className="mt-4 text-center">
           <Button
@@ -37,16 +42,9 @@ export function FeedList({
             disabled={loading}
             onClick={async () => {
               setLoading(true);
-              const result = await loadMoreFollowingFeed(cursor);
+              const result = await loadMoreUserPosts(username, cursor, postType);
               setPosts((prev) => [...prev, ...result.items]);
               setCursor(result.nextCursor);
-              if (result.likedPostIds?.length) {
-                setLikedSet((prev) => {
-                  const next = new Set(prev);
-                  for (const id of result.likedPostIds) next.add(id);
-                  return next;
-                });
-              }
               setLoading(false);
             }}
           >

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { rateLimitSocialAction } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
+import { getPostDetailPath } from "@/lib/post-path";
 
 export type ActionResult<T = void> =
   | { ok: true; data?: T }
@@ -120,13 +121,24 @@ export async function addComment(data: {
       where: { id: data.postId },
       select: { authorId: true, title: true, type: true },
     });
+    const postPath = post
+      ? getPostDetailPath(data.postId, post.type)
+      : `/article/${data.postId}`;
     if (post && post.authorId !== user.id) {
+      const commentBody =
+        post.type === "MOMENT"
+          ? data.parentId
+            ? "回复了你的评论"
+            : "评论了你的短文"
+          : data.parentId
+            ? "回复了你的评论"
+            : `评论了你的文章《${post.title ?? "无题"}》`;
       await createNotification({
         userId: post.authorId,
         type: data.parentId ? "REPLY" : "COMMENT",
         actorId: user.id,
-        href: `/article/${data.postId}`,
-        body: data.parentId ? "回复了你的评论" : `评论了你的文章《${post.title ?? "无题"}》`,
+        href: postPath,
+        body: commentBody,
       });
     }
     if (data.parentId) {
@@ -139,12 +151,12 @@ export async function addComment(data: {
           userId: parentComment.authorId,
           type: "REPLY",
           actorId: user.id,
-          href: `/article/${data.postId}`,
+          href: postPath,
           body: "回复了你的评论",
         });
       }
     }
-    revalidatePath(`/article/${data.postId}`);
+    revalidatePath(postPath);
   }
 
   if (data.guestbookEntryId) {
@@ -220,7 +232,7 @@ export async function deleteComment(commentId: string): Promise<ActionResult> {
   const comment = await prisma.comment.findUnique({
     where: { id: commentId },
     include: {
-      post: { select: { id: true } },
+      post: { select: { id: true, type: true } },
       guestbookEntry: { include: { shop: { select: { slug: true } } } },
       streetMessage: { include: { street: { select: { slug: true } } } },
     },
@@ -234,7 +246,9 @@ export async function deleteComment(commentId: string): Promise<ActionResult> {
 
   await prisma.comment.delete({ where: { id: commentId } });
 
-  if (comment.postId) revalidatePath(`/article/${comment.postId}`);
+  if (comment.postId && comment.post) {
+    revalidatePath(getPostDetailPath(comment.postId, comment.post.type));
+  }
   if (comment.guestbookEntry) {
     revalidatePath(`/shop/${comment.guestbookEntry.shop.slug}`);
   }
@@ -282,10 +296,83 @@ export async function loadMoreNotifications(cursor: string) {
 
 export async function loadMoreFollowingFeed(cursor: string) {
   const user = await getSessionUser();
-  if (!user) return { items: [], nextCursor: null };
+  if (!user) return { items: [], nextCursor: null, likedPostIds: [] as string[] };
 
   const { getFollowingFeed } = await import("@/lib/queries");
-  return getFollowingFeed(user.id, 20, cursor);
+  const result = await getFollowingFeed(user.id, 20, cursor);
+  const momentIds = result.items
+    .filter((p) => p.type === "MOMENT")
+    .map((p) => p.id);
+  const likedRows =
+    momentIds.length > 0
+      ? await prisma.like.findMany({
+          where: { userId: user.id, postId: { in: momentIds } },
+          select: { postId: true },
+        })
+      : [];
+  return {
+    ...result,
+    likedPostIds: likedRows.map((r) => r.postId),
+  };
+}
+
+export async function loadMorePostComments(postId: string, cursor: string) {
+  const { getPostComments } = await import("@/lib/queries");
+  return getPostComments(postId, 20, cursor);
+}
+
+export async function loadMoreUserPosts(
+  username: string,
+  cursor: string,
+  type?: "ARTICLE" | "MOMENT",
+) {
+  const { getUserPosts } = await import("@/lib/queries");
+  return getUserPosts(username, 20, cursor, type);
+}
+
+export async function loadMoreStreetFeed(streetId: string, cursor: string) {
+  const { getStreetFeed } = await import("@/lib/queries");
+  return getStreetFeed(streetId, 20, cursor);
+}
+
+export async function loadMoreFollowers(userId: string, cursor: string) {
+  const { getFollowers } = await import("@/lib/queries");
+  return getFollowers(userId, 20, cursor);
+}
+
+export async function loadMoreFollowing(userId: string, cursor: string) {
+  const { getFollowing } = await import("@/lib/queries");
+  return getFollowing(userId, 20, cursor);
+}
+
+export async function followRecommendedUsers(
+  userIds: string[],
+): Promise<ActionResult<{ count: number }>> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "请先登录" };
+
+  const targets = userIds.filter((id) => id !== user.id).slice(0, 10);
+  if (targets.length === 0) return { ok: true, data: { count: 0 } };
+
+  const existing = await prisma.follow.findMany({
+    where: { followerId: user.id, followingId: { in: targets } },
+    select: { followingId: true },
+  });
+  const existingSet = new Set(existing.map((f) => f.followingId));
+  const toFollow = targets.filter((id) => !existingSet.has(id));
+
+  if (toFollow.length > 0) {
+    await prisma.follow.createMany({
+      data: toFollow.map((followingId) => ({
+        followerId: user.id,
+        followingId,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  revalidatePath("/feed");
+  return { ok: true, data: { count: toFollow.length } };
 }
 
 export async function toggleLike(postId: string): Promise<ActionResult<{ liked: boolean; count: number }>> {
@@ -312,6 +399,15 @@ export async function toggleLike(postId: string): Promise<ActionResult<{ liked: 
     await prisma.like.create({
       data: { userId: user.id, postId },
     });
+    if (post.authorId !== user.id) {
+      await createNotification({
+        userId: post.authorId,
+        type: "LIKE",
+        actorId: user.id,
+        href: `/moment/${postId}`,
+        body: "赞了你的短文",
+      });
+    }
   }
 
   const count = await prisma.like.count({ where: { postId } });

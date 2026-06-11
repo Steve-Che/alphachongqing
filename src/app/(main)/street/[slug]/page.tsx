@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getStreetBySlug, getStreetFeed, getUserResidence } from "@/lib/queries";
-import { StreetFeed } from "@/components/feed/StreetFeed";
+import { StreetFeedList } from "@/components/feed/StreetFeedList";
 import { MomentComposer } from "@/components/feed/MomentComposer";
 import { MessageWithReplies } from "@/components/social/MessageWithReplies";
 import { StreetViewLoader } from "@/components/map/StreetViewLoader";
@@ -32,6 +32,8 @@ export default async function StreetPage({
     : null;
   const canSettle = !!session?.user && !residence?.shop && !residence?.apartmentUnit;
   const streetFeed = await getStreetFeed(street.id);
+  const feedItems = streetFeed.items;
+  const feedCursor = streetFeed.nextCursor;
   const isAdmin = session?.user?.role === "ADMIN";
 
   const shopSlots = street.shopSlots.filter((s) => !s.isCenter);
@@ -144,14 +146,19 @@ export default async function StreetPage({
           本街短文、新开店与新入住，按时间聚合。
         </p>
         {session?.user && (
-          <div className="mb-4">
+          <div id="moment-composer" className="mb-4">
             <MomentComposer
               defaultStreetId={street.id}
               defaultStreetName={street.nameZh}
             />
           </div>
         )}
-        <StreetFeed items={streetFeed} />
+        <StreetFeedList
+          streetId={street.id}
+          initialItems={feedItems}
+          initialCursor={feedCursor}
+          streetSlug={street.slug}
+        />
       </section>
 
       <section>

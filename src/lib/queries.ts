@@ -85,7 +85,17 @@ export const getUserResidence = cache(async (userId: string) => {
 export async function getPostById(id: string) {
   return prisma.post.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      type: true,
+      title: true,
+      body: true,
+      coverUrl: true,
+      authorId: true,
+      streetId: true,
+      published: true,
+      createdAt: true,
+      updatedAt: true,
       author: { select: { username: true, displayName: true, avatarUrl: true } },
       street: { select: { nameZh: true, slug: true } },
       images: true,
@@ -286,11 +296,11 @@ export async function getUserByUsername(username: string) {
       posts: {
         where: { published: true },
         orderBy: { createdAt: "desc" },
-        take: 30,
+        take: 20,
         include: {
           images: true,
           street: { select: { nameZh: true, slug: true } },
-          _count: { select: { likes: true } },
+          _count: { select: { likes: true, comments: true } },
         },
       },
     },
@@ -425,21 +435,35 @@ export type StreetFeedItem =
       author: { username: string; displayName: string | null };
     };
 
-export async function getStreetFeed(streetId: string, take = 20): Promise<StreetFeedItem[]> {
+export async function getStreetFeed(
+  streetId: string,
+  take = 20,
+  cursor?: string,
+): Promise<{ items: StreetFeedItem[]; nextCursor: string | null }> {
+  const before = cursor ? new Date(cursor) : null;
+
   const [moments, shops, moveIns] = await Promise.all([
     prisma.post.findMany({
-      where: { streetId, type: "MOMENT", published: true },
+      where: {
+        streetId,
+        type: "MOMENT",
+        published: true,
+        ...(before ? { createdAt: { lt: before } } : {}),
+      },
       orderBy: { createdAt: "desc" },
-      take,
+      take: take + 5,
       include: {
         author: { select: { username: true, displayName: true } },
         images: { select: { url: true } },
       },
     }),
     prisma.shop.findMany({
-      where: { shopSlot: { streetId } },
+      where: {
+        shopSlot: { streetId },
+        ...(before ? { createdAt: { lt: before } } : {}),
+      },
       orderBy: { createdAt: "desc" },
-      take: 10,
+      take: take + 5,
       select: {
         id: true,
         slug: true,
@@ -449,9 +473,13 @@ export async function getStreetFeed(streetId: string, take = 20): Promise<Street
       },
     }),
     prisma.apartmentUnit.findMany({
-      where: { building: { streetId }, residentId: { not: null } },
+      where: {
+        building: { streetId },
+        residentId: { not: null },
+        ...(before ? { updatedAt: { lt: before } } : {}),
+      },
       orderBy: { updatedAt: "desc" },
-      take: 10,
+      take: take + 5,
       include: {
         resident: { select: { username: true, displayName: true } },
         building: { select: { buildingNumber: true } },
@@ -487,15 +515,196 @@ export async function getStreetFeed(streetId: string, take = 20): Promise<Street
     })),
   ];
 
-  return items
+  const sorted = items
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, take);
+    .slice(0, take + 1);
+
+  let nextCursor: string | null = null;
+  if (sorted.length > take) {
+    const last = sorted.pop()!;
+    nextCursor = last.createdAt.toISOString();
+  }
+  return { items: sorted, nextCursor };
 }
 
-export async function getPostComments(postId: string) {
-  return prisma.comment.findMany({
+export async function getUserPosts(
+  username: string,
+  take = 20,
+  cursor?: string,
+  type?: "ARTICLE" | "MOMENT",
+) {
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true },
+  });
+  if (!user) return { items: [], nextCursor: null };
+
+  const items = await prisma.post.findMany({
+    where: {
+      authorId: user.id,
+      published: true,
+      ...(type ? { type } : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    take: take + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    include: {
+      images: true,
+      street: { select: { nameZh: true, slug: true } },
+      author: { select: { username: true, displayName: true, avatarUrl: true } },
+      _count: { select: { likes: true, comments: true } },
+    },
+  });
+
+  let nextCursor: string | null = null;
+  if (items.length > take) {
+    const last = items.pop()!;
+    nextCursor = last.id;
+  }
+  return { items, nextCursor };
+}
+
+export async function getFollowers(
+  userId: string,
+  take = 20,
+  cursor?: string,
+) {
+  const rows = await prisma.follow.findMany({
+    where: { followingId: userId },
+    orderBy: { createdAt: "desc" },
+    take: take + 1,
+    ...(cursor
+      ? {
+          cursor: {
+            followerId_followingId: { followerId: cursor, followingId: userId },
+          },
+          skip: 1,
+        }
+      : {}),
+    include: {
+      follower: {
+        select: { id: true, username: true, displayName: true, avatarUrl: true },
+      },
+    },
+  });
+
+  let nextCursor: string | null = null;
+  if (rows.length > take) {
+    const last = rows.pop()!;
+    nextCursor = last.followerId;
+  }
+  return {
+    items: rows.map((r) => r.follower),
+    nextCursor,
+  };
+}
+
+export async function getFollowing(
+  userId: string,
+  take = 20,
+  cursor?: string,
+) {
+  const rows = await prisma.follow.findMany({
+    where: { followerId: userId },
+    orderBy: { createdAt: "desc" },
+    take: take + 1,
+    ...(cursor ? { cursor: { followerId_followingId: { followerId: userId, followingId: cursor } }, skip: 1 } : {}),
+    include: {
+      following: {
+        select: { id: true, username: true, displayName: true, avatarUrl: true },
+      },
+    },
+  });
+
+  let nextCursor: string | null = null;
+  if (rows.length > take) {
+    const last = rows.pop()!;
+    nextCursor = last.followingId;
+  }
+  return {
+    items: rows.map((r) => r.following),
+    nextCursor,
+  };
+}
+
+export async function getFollowRelation(
+  viewerId: string | undefined,
+  targetId: string,
+) {
+  if (!viewerId || viewerId === targetId) {
+    return { following: false, followedBy: false, mutual: false };
+  }
+  const [following, followedBy] = await Promise.all([
+    prisma.follow.findUnique({
+      where: { followerId_followingId: { followerId: viewerId, followingId: targetId } },
+    }),
+    prisma.follow.findUnique({
+      where: { followerId_followingId: { followerId: targetId, followingId: viewerId } },
+    }),
+  ]);
+  return {
+    following: !!following,
+    followedBy: !!followedBy,
+    mutual: !!following && !!followedBy,
+  };
+}
+
+export async function getAdminDashboardStats() {
+  const [users, shops, apartmentResidents, posts, inviteUsed] = await Promise.all([
+    prisma.user.count(),
+    prisma.shop.count(),
+    prisma.apartmentUnit.count({ where: { residentId: { not: null } } }),
+    prisma.post.count({ where: { published: true } }),
+    prisma.inviteCode.aggregate({ _sum: { usedCount: true } }),
+  ]);
+  const settleRate =
+    users > 0 ? Math.round(((shops + apartmentResidents) / users) * 100) : 0;
+  return {
+    users,
+    shops,
+    apartmentResidents,
+    posts,
+    inviteUsed: inviteUsed._sum.usedCount ?? 0,
+    settleRate,
+  };
+}
+
+export async function getRecentAdminActivity(take = 10) {
+  const [comments, messages] = await Promise.all([
+    prisma.comment.findMany({
+      orderBy: { createdAt: "desc" },
+      take,
+      include: {
+        author: { select: { username: true, displayName: true } },
+        post: { select: { id: true, type: true, title: true } },
+      },
+    }),
+    prisma.streetMessage.findMany({
+      orderBy: { createdAt: "desc" },
+      take,
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        archived: true,
+        author: { select: { username: true, displayName: true } },
+        street: { select: { slug: true, nameZh: true } },
+      },
+    }),
+  ]);
+  return { comments, messages };
+}
+
+export async function getPostComments(
+  postId: string,
+  take = 20,
+  cursor?: string,
+) {
+  const items = await prisma.comment.findMany({
     where: { postId, parentId: null },
     orderBy: { createdAt: "asc" },
+    take: take + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: {
       author: { select: { id: true, username: true, displayName: true } },
       replies: {
@@ -506,6 +715,13 @@ export async function getPostComments(postId: string) {
       },
     },
   });
+
+  let nextCursor: string | null = null;
+  if (items.length > take) {
+    const last = items.pop()!;
+    nextCursor = last.id;
+  }
+  return { items, nextCursor };
 }
 
 export async function getGuestbookComments(entryIds: string[]) {
@@ -553,7 +769,7 @@ export async function getFollowingFeed(
       author: { select: { username: true, displayName: true, avatarUrl: true } },
       street: { select: { nameZh: true, slug: true } },
       images: { select: { url: true } },
-      _count: { select: { likes: true } },
+      _count: { select: { likes: true, comments: true } },
     },
   });
 

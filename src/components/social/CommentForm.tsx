@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { addComment } from "@/app/actions/social";
+import { dispatchNotificationsUpdated } from "@/lib/notification-events";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -39,6 +41,8 @@ export function CommentForm({
     });
     if (result.ok) {
       e.currentTarget.reset();
+      toast.success(parentId ? "回复已发送" : "评论已发表");
+      dispatchNotificationsUpdated();
       router.refresh();
     } else {
       setError(result.error);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { deletePost } from "@/app/actions/posts";
 
 export function DeletePostButton({ postId }: { postId: string }) {
@@ -12,7 +13,12 @@ export function DeletePostButton({ postId }: { postId: string }) {
     if (!confirm("确定删除这条内容？")) return;
     setLoading(true);
     const result = await deletePost(postId);
-    if (result.ok) router.refresh();
+    if (result.ok) {
+      toast.success("已删除");
+      router.refresh();
+    } else {
+      toast.error(result.error);
+    }
     setLoading(false);
   }
 

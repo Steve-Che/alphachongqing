@@ -59,7 +59,7 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
   const [hoveredBuilding, setHoveredBuilding] = useState<number | null>(null);
   const [selectedBuilding, setSelectedBuilding] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [canOpenShop, setCanOpenShop] = useState(false);
+  const [canSettle, setCanSettle] = useState(false);
 
   useEffect(() => {
     fetch("/api/me")
@@ -67,7 +67,7 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
       .then((data) => {
         setIsLoggedIn(!!data?.user);
         const hasResidence = !!(data?.residence?.shop || data?.residence?.apartmentUnit);
-        setCanOpenShop(!!data?.user && !hasResidence);
+        setCanSettle(!!data?.user && !hasResidence);
       });
   }, []);
 
@@ -195,7 +195,7 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
         <Canvas
           camera={{ position: [0, 78, 78], fov: 42, near: 0.1, far: 500 }}
           gl={{ antialias: true }}
-          style={{ touchAction: "none" }}
+          style={{ touchAction: level === "street" ? "none" : "pan-y" }}
         >
           <Suspense fallback={null}>
             <MapCanvasSetup />
@@ -369,7 +369,7 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
               streetSlug={streetData.slug}
               pinned={!!selectedSlot}
               isLoggedIn={isLoggedIn}
-              canOpenShop={canOpenShop}
+              canOpenShop={canSettle}
               onClear={() => {
                 setSelectedSlotId(null);
                 setHoveredSlotId(null);
@@ -382,6 +382,8 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
               building={activeBuildingData}
               streetSlug={streetData.slug}
               pinned={!!selectedBuilding}
+              isLoggedIn={isLoggedIn}
+              canRent={canSettle}
               onClear={() => {
                 setSelectedBuilding(null);
                 setHoveredBuilding(null);

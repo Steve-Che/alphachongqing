@@ -59,7 +59,12 @@ export function HeaderUserNav() {
   }
 
   const { user, residence, stats } = me;
-  const isNewcomer = stats && (!stats.hasResidence || stats.postCount === 0);
+  const onboardingDone =
+    stats &&
+    stats.hasResidence &&
+    stats.postCount > 0 &&
+    stats.following > 0;
+  const isNewcomer = stats && !onboardingDone;
 
   return (
     <>
@@ -102,8 +107,8 @@ export function HeaderUserNav() {
           设置
         </Link>
         {user.role === "ADMIN" && (
-          <Link href="/admin/invites" className="hover:text-stone-900">
-            邀请码
+          <Link href="/admin" className="hover:text-stone-900">
+            管理
           </Link>
         )}
         <form action={signOutAction}>

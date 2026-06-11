@@ -4,9 +4,27 @@ import { AuthorLink } from "@/components/social/AuthorLink";
 import { PostImage } from "@/components/ui/post-image";
 import type { StreetFeedItem } from "@/lib/queries";
 
-export function StreetFeed({ items }: { items: StreetFeedItem[] }) {
+export function StreetFeed({
+  items,
+  streetSlug,
+}: {
+  items: StreetFeedItem[];
+  streetSlug?: string;
+}) {
   if (items.length === 0) {
-    return <p className="text-stone-500">本街还很安静，来发第一条动态吧。</p>;
+    return (
+      <p className="text-stone-500">
+        本街还很安静，来发第一条动态吧。
+        {streetSlug && (
+          <>
+            {" "}
+            <a href="#moment-composer" className="text-accent hover:underline">
+              写一条短文
+            </a>
+          </>
+        )}
+      </p>
+    );
   }
 
   return (

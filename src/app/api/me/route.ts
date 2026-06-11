@@ -33,5 +33,16 @@ export async function GET() {
       followers: stats.followers,
       following: stats.following,
     },
+    onboarding: {
+      hasResidence: stats.hasResidence,
+      postCount: stats.postCount,
+      followingCount: stats.following,
+      completedSteps: [
+        true,
+        stats.hasResidence,
+        stats.postCount > 0,
+        stats.following > 0,
+      ].filter(Boolean).length,
+    },
   });
 }

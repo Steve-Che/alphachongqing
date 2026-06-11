@@ -83,6 +83,38 @@ export async function createMoment(data: {
   return { ok: true, data: { id: post.id } };
 }
 
+export async function updateArticle(data: {
+  id: string;
+  title: string;
+  body: string;
+  coverUrl?: string;
+}): Promise<ActionResult<{ id: string }>> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "请先登录" };
+
+  const post = await prisma.post.findUnique({ where: { id: data.id } });
+  if (!post || post.authorId !== user.id || post.type !== "ARTICLE") {
+    return { ok: false, error: "无权编辑" };
+  }
+
+  const title = data.title.trim();
+  const body = sanitizeHtml(data.body.trim());
+  if (!title || !body) return { ok: false, error: "标题和正文不能为空" };
+
+  await prisma.post.update({
+    where: { id: data.id },
+    data: {
+      title,
+      body,
+      coverUrl: data.coverUrl || null,
+    },
+  });
+
+  revalidatePath(`/article/${data.id}`);
+  revalidatePath(`/u/${user.username}`);
+  return { ok: true, data: { id: data.id } };
+}
+
 export async function deletePost(postId: string): Promise<ActionResult> {
   const user = await getSessionUser();
   if (!user) return { ok: false, error: "请先登录" };

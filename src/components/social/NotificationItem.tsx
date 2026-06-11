@@ -11,6 +11,7 @@ const TYPE_LABELS: Record<string, string> = {
   COMMENT: "评论",
   REPLY: "回复",
   FOLLOW: "关注",
+  LIKE: "点赞",
 };
 
 export function NotificationItem({

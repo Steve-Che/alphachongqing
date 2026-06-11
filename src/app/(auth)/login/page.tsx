@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { sanitizeCallbackUrl } from "@/lib/callback-url";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ reset?: string }>;
+  searchParams: Promise<{ reset?: string; callbackUrl?: string }>;
 }) {
-  const { reset } = await searchParams;
+  const { reset, callbackUrl } = await searchParams;
+  const safeCallback = sanitizeCallbackUrl(callbackUrl);
 
   return (
     <div className="rounded border border-stone-200 bg-paper p-8 shadow-sm">
@@ -22,7 +24,7 @@ export default async function LoginPage({
         </p>
       )}
       <div className="mt-6">
-        <LoginForm />
+        <LoginForm callbackUrl={safeCallback} />
       </div>
       <p className="mt-6 text-center text-sm text-stone-500">
         还没有账号？{" "}

@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { encodeRouteSlug } from "@/lib/route-slug";
+import { ApartmentRentPanel } from "./ApartmentRentPanel";
 import type { ApartmentBuildingData } from "./ApartmentTowers";
 
 export function ApartmentBuildingPanel({
@@ -9,15 +8,17 @@ export function ApartmentBuildingPanel({
   streetSlug,
   pinned,
   onClear,
+  isLoggedIn,
+  canRent,
 }: {
   building: ApartmentBuildingData | null;
   streetSlug: string;
   pinned?: boolean;
   onClear?: () => void;
+  isLoggedIn?: boolean;
+  canRent?: boolean;
 }) {
   if (!building) return null;
-
-  const hasResidents = building.occupiedCount > 0;
 
   return (
     <div className="pointer-events-auto max-w-sm rounded-lg border border-stone-200 bg-paper/95 p-4 shadow-md backdrop-blur-sm">
@@ -44,21 +45,14 @@ export function ApartmentBuildingPanel({
         入住 {building.occupiedCount}/{building.totalUnits} 户
       </p>
 
-      {hasResidents && building.sampleUnitId ? (
-        <Link
-          href={`/apartment/${building.sampleUnitId}`}
-          className="mt-3 inline-block rounded bg-stone-800 px-4 py-2 text-sm text-white hover:bg-stone-700"
-        >
-          查看住户 →
-        </Link>
-      ) : (
-        <Link
-          href={`/street/${encodeRouteSlug(streetSlug)}#apartment`}
-          className="mt-3 inline-block rounded bg-stone-800 px-4 py-2 text-sm text-white hover:bg-stone-700"
-        >
-          选此楼入住 →
-        </Link>
-      )}
+      <div className="mt-3">
+        <ApartmentRentPanel
+          building={building}
+          streetSlug={streetSlug}
+          isLoggedIn={isLoggedIn}
+          canRent={canRent}
+        />
+      </div>
     </div>
   );
 }

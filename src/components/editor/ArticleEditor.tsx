@@ -5,18 +5,30 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createArticle } from "@/app/actions/posts";
+import { toast } from "sonner";
+import { createArticle, updateArticle } from "@/app/actions/posts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function ArticleEditor() {
+export function ArticleEditor({
+  postId,
+  initialTitle = "",
+  initialBody = "",
+  initialCoverUrl = "",
+}: {
+  postId?: string;
+  initialTitle?: string;
+  initialBody?: string;
+  initialCoverUrl?: string;
+}) {
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [coverUrl, setCoverUrl] = useState("");
+  const [title, setTitle] = useState(initialTitle);
+  const [coverUrl, setCoverUrl] = useState(initialCoverUrl);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const isEdit = !!postId;
 
   const editor = useEditor({
     extensions: [
@@ -31,8 +43,15 @@ export function ArticleEditor() {
           "prose-retro min-h-[300px] rounded border border-stone-200 bg-white p-4 focus:outline-none",
       },
     },
+    content: initialBody,
     immediatelyRender: false,
   });
+
+  useEffect(() => {
+    if (editor && initialBody && !editor.getText()) {
+      editor.commands.setContent(initialBody);
+    }
+  }, [editor, initialBody]);
 
   async function handleImageUpload() {
     const input = document.createElement("input");
@@ -55,12 +74,16 @@ export function ArticleEditor() {
     if (!editor) return;
     setLoading(true);
     setError("");
-    const result = await createArticle({
+    const payload = {
       title,
       body: editor.getHTML(),
       coverUrl: coverUrl || undefined,
-    });
+    };
+    const result = isEdit
+      ? await updateArticle({ id: postId!, ...payload })
+      : await createArticle(payload);
     if (result.ok && result.data?.id) {
+      toast.success(isEdit ? "文章已更新" : "长文已发布");
       router.push(`/article/${result.data.id}`);
       router.refresh();
     } else if (!result.ok) {
@@ -90,7 +113,7 @@ export function ArticleEditor() {
       </div>
       <EditorContent editor={editor} />
       <Button type="submit" disabled={loading || !editor}>
-        {loading ? "发布中…" : "发布长文"}
+        {loading ? "保存中…" : isEdit ? "保存修改" : "发布长文"}
       </Button>
     </form>
   );

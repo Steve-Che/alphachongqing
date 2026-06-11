@@ -1,15 +1,25 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import { CityMapLoader } from "@/components/map/CityMapLoader";
+import { MapViewToggle } from "@/components/map/MapViewToggle";
 import { DistrictList } from "@/components/map/DistrictList";
 import { ResidenceBanner } from "@/components/residence/ResidenceBanner";
-import { getHomePageData } from "@/lib/queries";
+import { HomeFeedPreview } from "@/components/feed/HomeFeedPreview";
+import { WelcomeBanner } from "@/components/guide/WelcomeBanner";
+import { getHomePageData, getFollowingFeed } from "@/lib/queries";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
   const session = await auth();
   const { districtList, mapData, stats } = await getHomePageData();
+
+  const feedPreview =
+    session?.user?.id
+      ? (await getFollowingFeed(session.user.id, 5)).items.map((p) => ({
+          ...p,
+          author: p.author,
+        }))
+      : [];
 
   return (
     <div className="space-y-8">
@@ -46,25 +56,23 @@ export default async function HomePage() {
       </section>
 
       {session?.user && (
-        <ResidenceBanner userId={session.user.id} />
-      )}
-
-      {session?.user && (
-        <p className="text-sm text-stone-600">
-          <Link href="/feed" className="text-accent hover:underline">街坊动态</Link>
-          {" · "}
-          <Link href="/search" className="text-accent hover:underline">搜索街坊</Link>
-        </p>
+        <>
+          <WelcomeBanner />
+          <ResidenceBanner userId={session.user.id} />
+          <HomeFeedPreview userId={session.user.id} posts={feedPreview} />
+          <p className="text-sm text-stone-600">
+            <Link href="/search" className="text-accent hover:underline">搜索街坊</Link>
+          </p>
+        </>
       )}
 
       <section id="map">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-serif text-lg font-semibold">三维城市地图</h2>
           <Link href="/guide" className="text-sm text-accent hover:underline">
             如何入驻？
           </Link>
         </div>
-        <CityMapLoader districts={mapData} />
+        <MapViewToggle mapData={mapData} districtList={districtList} />
       </section>
 
       <section>

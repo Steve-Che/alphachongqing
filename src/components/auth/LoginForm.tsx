@@ -7,7 +7,7 @@ import { loginUser } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function LoginForm() {
+export function LoginForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,7 +19,7 @@ export function LoginForm() {
     const formData = new FormData(e.currentTarget);
     const result = await loginUser(formData);
     if (result.ok) {
-      router.push("/");
+      router.push(callbackUrl);
       router.refresh();
     } else {
       setError(result.error);

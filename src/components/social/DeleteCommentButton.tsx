@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { deleteComment } from "@/app/actions/social";
 
 export function DeleteCommentButton({ commentId }: { commentId: string }) {
@@ -12,7 +13,12 @@ export function DeleteCommentButton({ commentId }: { commentId: string }) {
     if (!confirm("确定删除这条评论？")) return;
     setLoading(true);
     const result = await deleteComment(commentId);
-    if (result.ok) router.refresh();
+    if (result.ok) {
+      toast.success("评论已删除");
+      router.refresh();
+    } else {
+      toast.error(result.error);
+    }
     setLoading(false);
   }
 

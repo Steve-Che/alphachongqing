@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toggleLike } from "@/app/actions/social";
+import { dispatchNotificationsUpdated } from "@/lib/notification-events";
 import { toast } from "sonner";
 
 export function LikeButton({
@@ -28,6 +29,7 @@ export function LikeButton({
     if (result.ok && result.data) {
       setLiked(result.data.liked);
       setCount(result.data.count);
+      if (result.data.liked) dispatchNotificationsUpdated();
     } else {
       setLiked(prevLiked);
       setCount(prevCount);
@@ -41,6 +43,7 @@ export function LikeButton({
       type="button"
       onClick={handleClick}
       disabled={loading}
+      aria-label={liked ? "取消点赞" : "点赞"}
       className={`text-xs ${liked ? "text-red-600" : "text-stone-400 hover:text-stone-600"}`}
     >
       {liked ? "♥" : "♡"} {count > 0 ? count : ""}

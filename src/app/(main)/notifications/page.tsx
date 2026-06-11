@@ -15,7 +15,9 @@ export default async function NotificationsPage() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="font-serif text-2xl font-semibold">通知</h1>
-          <p className="mt-1 text-sm text-stone-500">有人回应你时的站内提醒。</p>
+          <p className="mt-1 text-sm text-stone-500">
+          关注、评论、回复与点赞会出现在这里。
+        </p>
         </div>
         <MarkAllReadButton />
       </header>
