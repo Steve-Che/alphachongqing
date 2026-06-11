@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth";
-import { compressImage } from "@/lib/compress-image";
 import {
   IMAGE_UPLOAD_PRESETS,
   SERVER_MAX_UPLOAD_BYTES,
@@ -40,6 +39,14 @@ export async function POST(request: Request) {
     );
   }
 
+  const preset = IMAGE_UPLOAD_PRESETS[purpose];
+  if (file.size > preset.maxBytes * 1.2) {
+    return NextResponse.json(
+      { error: "图片体积异常，请刷新页面后重新选择照片" },
+      { status: 400 },
+    );
+  }
+
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   if (!token) {
     return NextResponse.json(
@@ -49,27 +56,25 @@ export async function POST(request: Request) {
   }
 
   try {
-    const input = Buffer.from(await file.arrayBuffer());
-    const compressed = await compressImage(input, purpose);
-    const pathname = `uploads/${session.user.id}/${Date.now()}.${compressed.ext}`;
+    const data = Buffer.from(await file.arrayBuffer());
+    const pathname = `uploads/${session.user.id}/${Date.now()}.jpg`;
 
-    const blob = await put(pathname, compressed.data, {
+    const blob = await put(pathname, data, {
       access: "public",
       token,
-      contentType: compressed.contentType,
+      contentType: "image/jpeg",
     });
 
     return NextResponse.json({
       url: blob.url,
-      size: compressed.compressedBytes,
-      originalSize: compressed.originalBytes,
-      maxBytes: IMAGE_UPLOAD_PRESETS[purpose].maxBytes,
+      size: data.length,
+      maxBytes: preset.maxBytes,
     });
   } catch (err) {
     console.error("[upload]", err);
     return NextResponse.json(
-      { error: "图片处理失败，请换用 JPG/PNG 或稍小的照片" },
-      { status: 400 },
+      { error: "图片上传失败，请稍后重试" },
+      { status: 500 },
     );
   }
 }
