@@ -13,7 +13,7 @@ export function Header() {
             地图
           </Link>
           <Link href="/guide" className="hover:text-stone-900">
-            入驻指南
+            街坊手册
           </Link>
           <HeaderUserNav />
         </nav>

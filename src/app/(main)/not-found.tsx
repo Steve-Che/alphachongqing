@@ -10,7 +10,7 @@ export default function NotFound() {
           回到城市地图
         </Link>
         <Link href="/guide" className="text-accent hover:underline">
-          入驻指南
+          街坊手册
         </Link>
       </div>
     </div>

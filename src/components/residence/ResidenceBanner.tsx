@@ -81,7 +81,7 @@ export async function ResidenceBanner({ userId }: { userId: string }) {
           在地图上选街道
         </Link>
         <Link href="/guide" className="text-accent hover:underline">
-          查看入驻指南 →
+          查看街坊手册 →
         </Link>
       </div>
     </div>

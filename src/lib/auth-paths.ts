@@ -10,6 +10,7 @@ const EXACT_PUBLIC = new Set([
 ]);
 
 const PREFIX_PUBLIC = [
+  "/guide/",
   "/district/",
   "/street/",
   "/shop/",

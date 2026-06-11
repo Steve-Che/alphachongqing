@@ -68,7 +68,7 @@ export default async function FeedPage() {
             或去
             <Link href="/" className="text-accent hover:underline"> 城市地图 </Link>
             逛街道，在
-            <Link href="/guide" className="text-accent hover:underline"> 入驻指南 </Link>
+            <Link href="/guide" className="text-accent hover:underline"> 街坊手册 </Link>
             了解街坊社交。
           </p>
         </div>
