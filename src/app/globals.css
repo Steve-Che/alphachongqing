@@ -69,3 +69,32 @@ body {
   height: 0;
   pointer-events: none;
 }
+
+@keyframes streetBubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.street-bubble-enter {
+  animation: streetBubbleIn 0.45s ease-out both;
+}
+
+.street-strip-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #c9b89a transparent;
+}
+
+.street-strip-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.street-strip-scroll::-webkit-scrollbar-thumb {
+  background: #c9b89a;
+  border-radius: 3px;
+}

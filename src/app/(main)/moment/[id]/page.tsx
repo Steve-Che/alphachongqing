@@ -2,7 +2,13 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getMomentById, getPostComments, getPostLikeState } from "@/lib/queries";
+import {
+  getMomentById,
+  getPostBookmarkState,
+  getPostComments,
+  getPostLikeState,
+} from "@/lib/queries";
+import { BookmarkButton } from "@/components/social/BookmarkButton";
 import { FormattedTime } from "@/components/ui/formatted-time";
 import { siteName, siteUrl } from "@/lib/site";
 import { AuthorLink } from "@/components/social/AuthorLink";
@@ -44,14 +50,14 @@ export default async function MomentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [post, session, commentResult] = await Promise.all([
+  const session = await auth();
+  const [post, commentResult, likeState, bookmarkState] = await Promise.all([
     getMomentById(id),
-    auth(),
     getPostComments(id),
+    getPostLikeState(id, session?.user?.id),
+    getPostBookmarkState(id, session?.user?.id),
   ]);
   if (!post) notFound();
-
-  const likeState = await getPostLikeState(post.id, session?.user?.id);
   const isAdmin = session?.user?.role === "ADMIN";
 
   return (
@@ -77,7 +83,15 @@ export default async function MomentPage({
             <AuthorLink author={post.author} showAvatar className="font-medium text-stone-800" />
             <span>· <FormattedTime date={post.createdAt} /></span>
           </div>
-          <ShareButton title="阿尔法重庆短文" url={`/moment/${post.id}`} />
+          <div className="flex items-center gap-1">
+            {session?.user && (
+              <BookmarkButton
+                postId={post.id}
+                initialBookmarked={bookmarkState.bookmarked}
+              />
+            )}
+            <ShareButton title="阿尔法重庆短文" url={`/moment/${post.id}`} />
+          </div>
         </div>
         <p className="mt-4 whitespace-pre-wrap text-lg text-stone-800">{post.body}</p>
         {post.images.length > 0 && (

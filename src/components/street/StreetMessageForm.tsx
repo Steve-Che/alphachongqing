@@ -7,7 +7,13 @@ import { addStreetMessage } from "@/app/actions/shop";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-export function StreetMessageForm({ streetId }: { streetId: string }) {
+export function StreetMessageForm({
+  streetId,
+  canPostOfficial = false,
+}: {
+  streetId: string;
+  canPostOfficial?: boolean;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -19,7 +25,12 @@ export function StreetMessageForm({ streetId }: { streetId: string }) {
     setError("");
     const fd = new FormData(form);
     try {
-      const result = await addStreetMessage(streetId, fd.get("content") as string);
+      const asOfficial = fd.get("asOfficial") === "on";
+      const result = await addStreetMessage(
+        streetId,
+        fd.get("content") as string,
+        { asOfficial },
+      );
       if (result.ok) {
         form.reset();
         toast.success("街道留言已发布");
@@ -44,6 +55,12 @@ export function StreetMessageForm({ streetId }: { streetId: string }) {
         required
         maxLength={500}
       />
+      {canPostOfficial && (
+        <label className="flex items-center gap-2 text-xs text-stone-600">
+          <input type="checkbox" name="asOfficial" className="rounded" />
+          作为街道服务长官方公告发布
+        </label>
+      )}
       <Button type="submit" size="sm" disabled={loading}>
         {loading ? "发送中…" : "街道留言"}
       </Button>

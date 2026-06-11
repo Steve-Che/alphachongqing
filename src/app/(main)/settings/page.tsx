@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { ProfileSettingsForm } from "@/components/settings/ProfileSettingsForm";
+import { ShopSettingsForm } from "@/components/settings/ShopSettingsForm";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -14,6 +15,9 @@ export default async function SettingsPage() {
       displayName: true,
       bio: true,
       avatarUrl: true,
+      shop: {
+        select: { name: true, tagline: true, coverUrl: true },
+      },
     },
   });
   if (!user) redirect("/login");
@@ -25,6 +29,7 @@ export default async function SettingsPage() {
         <p className="mt-1 text-sm text-stone-500">更新你在阿尔法重庆的身份信息。</p>
       </header>
       <ProfileSettingsForm user={user} />
+      {user.shop && <ShopSettingsForm shop={user.shop} />}
     </div>
   );
 }

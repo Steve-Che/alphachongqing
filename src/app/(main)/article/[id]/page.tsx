@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getPostById, getPostComments } from "@/lib/queries";
+import { getPostById, getPostBookmarkState, getPostComments } from "@/lib/queries";
+import { BookmarkButton } from "@/components/social/BookmarkButton";
 import { FormattedTime } from "@/components/ui/formatted-time";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import { siteName, siteUrl } from "@/lib/site";
@@ -42,10 +43,11 @@ export default async function ArticlePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [post, session, commentResult] = await Promise.all([
+  const session = await auth();
+  const [post, commentResult, bookmarkState] = await Promise.all([
     getPostById(id),
-    auth(),
     getPostComments(id),
+    getPostBookmarkState(id, session?.user?.id),
   ]);
   if (!post || post.type !== "ARTICLE") notFound();
 
@@ -75,6 +77,12 @@ export default async function ArticlePage({
               </Link>
             )}
             <ShareButton title={post.title ?? "阿尔法重庆长文"} url={`/article/${post.id}`} />
+            {session?.user && (
+              <BookmarkButton
+                postId={post.id}
+                initialBookmarked={bookmarkState.bookmarked}
+              />
+            )}
           </div>
         </div>
         <p className="mt-3 text-sm text-stone-500">

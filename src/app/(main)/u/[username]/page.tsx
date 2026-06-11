@@ -15,6 +15,7 @@ import { FollowButton } from "@/components/social/FollowButton";
 import { ShareButton } from "@/components/social/ShareButton";
 import { Avatar } from "@/components/social/Avatar";
 import { shopPath } from "@/lib/route-slug";
+import { StartConversationForm } from "@/components/messages/StartConversationForm";
 
 export const revalidate = 60;
 
@@ -151,6 +152,13 @@ export default async function UserPage({
           </div>
         )}
       </header>
+
+      {session?.user && !isSelf && (
+        <section className="rounded border border-stone-200 bg-paper p-4">
+          <h2 className="mb-2 font-serif text-sm font-semibold">发私信</h2>
+          <StartConversationForm targetUsername={user.username} />
+        </section>
+      )}
 
       {isSelf && (
         <div className="flex gap-3 text-sm">

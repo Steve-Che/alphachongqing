@@ -12,6 +12,7 @@ const TYPE_LABELS: Record<string, string> = {
   REPLY: "回复",
   FOLLOW: "关注",
   LIKE: "点赞",
+  MESSAGE: "私信",
 };
 
 export function NotificationItem({

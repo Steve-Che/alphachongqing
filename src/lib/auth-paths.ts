@@ -21,6 +21,7 @@ const PREFIX_PUBLIC = [
   "/search",
   "/api/auth/",
   "/api/health",
+  "/api/street/",
 ];
 
 export function isPublicPath(pathname: string): boolean {

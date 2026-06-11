@@ -48,9 +48,10 @@ export async function POST(request: Request) {
   }
 
   const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) {
+  const storeId = process.env.BLOB_STORE_ID;
+  if (!token && !storeId) {
     return NextResponse.json(
-      { error: "未配置 BLOB_READ_WRITE_TOKEN" },
+      { error: "未配置 Blob 存储（BLOB_READ_WRITE_TOKEN 或 BLOB_STORE_ID）" },
       { status: 500 },
     );
   }
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
 
     const blob = await put(pathname, data, {
       access: "public",
-      token,
+      ...(token ? { token } : {}),
       contentType: "image/jpeg",
     });
 

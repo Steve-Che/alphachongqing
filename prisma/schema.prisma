@@ -41,6 +41,7 @@ enum NotificationType {
   REPLY
   FOLLOW
   LIKE
+  MESSAGE
 }
 
 model User {
@@ -70,6 +71,10 @@ model User {
   notifications    Notification[]   @relation("Notifications")
   notificationActs Notification[]   @relation("NotificationActors")
   likes            Like[]
+  bookmarks        Bookmark[]
+  chiefOfStreets   Street[]         @relation("StreetServiceChief")
+  conversationParticipants ConversationParticipant[]
+  directMessages   DirectMessage[]
 
   @@index([username])
 }
@@ -135,16 +140,19 @@ model District {
 }
 
 model Street {
-  id         String   @id @default(cuid())
-  slug       String   @unique
-  nameZh     String
-  summary    String?
-  districtId String
-  sortOrder  Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String    @id @default(cuid())
+  slug           String    @unique
+  nameZh         String
+  summary        String?
+  districtId     String
+  sortOrder      Int       @default(0)
+  serviceChiefId String?
+  chiefSince     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   district           District            @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  serviceChief       User?               @relation("StreetServiceChief", fields: [serviceChiefId], references: [id], onDelete: SetNull)
   shopSlots          ShopSlot[]
   apartmentBuildings ApartmentBuilding[]
   streetMessages     StreetMessage[]
@@ -152,6 +160,7 @@ model Street {
 
   @@index([districtId])
   @@index([slug])
+  @@index([serviceChiefId])
 }
 
 model ShopSlot {
@@ -175,6 +184,7 @@ model Shop {
   slug        String   @unique
   name        String
   tagline     String?
+  coverUrl    String?
   shopSlotId  String   @unique
   ownerId     String   @unique
   createdAt   DateTime @default(now())
@@ -266,6 +276,7 @@ model Post {
   roomContents RoomContent[]
   comments     Comment[]
   likes        Like[]
+  bookmarks    Bookmark[]
 
   @@index([authorId, type])
   @@index([createdAt])
@@ -301,19 +312,22 @@ model GuestbookEntry {
 }
 
 model StreetMessage {
-  id        String   @id @default(cuid())
-  streetId  String
-  authorId  String
-  content   String
-  archived  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  streetId   String
+  authorId   String
+  content    String
+  archived   Boolean  @default(false)
+  isPinned   Boolean  @default(false)
+  isOfficial Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   street   Street    @relation(fields: [streetId], references: [id], onDelete: Cascade)
   author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments Comment[]
 
   @@index([streetId, createdAt])
+  @@index([streetId, isPinned])
 }
 
 model Comment {
@@ -366,4 +380,55 @@ model Like {
 
   @@id([userId, postId])
   @@index([postId])
+}
+
+model Bookmark {
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@index([postId])
+  @@index([userId, createdAt])
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants ConversationParticipant[]
+  messages     DirectMessage[]
+
+  @@index([updatedAt])
+}
+
+model ConversationParticipant {
+  conversationId String
+  userId         String
+  lastReadAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+model DirectMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  body           String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
 }

@@ -1,6 +1,14 @@
 import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { decodeRouteSlug } from "@/lib/route-slug";
+import { getApartmentRanges } from "@/lib/apartment-ranges";
+import { formatShopBubble } from "@/lib/street-activity";
+import type {
+  ApartmentRangeSummary,
+  StreetActivityPayload,
+  StreetPathBubble,
+  StreetStripSlot,
+} from "@/lib/street-types";
 import type { ApartmentBuildingData } from "@/components/map/ApartmentTowers";
 import type { RoomType } from "@/generated/prisma/client";
 
@@ -118,13 +126,19 @@ export async function getStreetBySlug(slug: string) {
     where: { slug },
     include: {
       district: { select: { slug: true, nameZh: true } },
+      serviceChief: {
+        select: { id: true, username: true, displayName: true },
+      },
       shopSlots: {
         orderBy: { slotIndex: "asc" },
         include: {
           shop: {
             select: {
+              id: true,
               slug: true,
               name: true,
+              tagline: true,
+              coverUrl: true,
               owner: { select: { username: true, displayName: true } },
             },
           },
@@ -907,5 +921,345 @@ export async function getPostLikeState(postId: string, userId?: string) {
 export async function getUnreadNotificationCount(userId: string) {
   return prisma.notification.count({
     where: { userId, readAt: null },
+  });
+}
+
+async function buildShopActivities(
+  streetId: string,
+  shops: { id: string; ownerId: string; owner: { displayName: string | null; username: string } }[],
+): Promise<Record<string, StreetStripSlot["activity"]>> {
+  if (shops.length === 0) return {};
+
+  const ownerIds = shops.map((s) => s.ownerId);
+  const shopIds = shops.map((s) => s.id);
+
+  const [moments, guestbooks] = await Promise.all([
+    prisma.post.findMany({
+      where: {
+        streetId,
+        type: "MOMENT",
+        published: true,
+        authorId: { in: ownerIds },
+      },
+      orderBy: { createdAt: "desc" },
+      distinct: ["authorId"],
+      select: {
+        authorId: true,
+        body: true,
+        author: { select: { displayName: true, username: true } },
+      },
+    }),
+    prisma.guestbookEntry.findMany({
+      where: { shopId: { in: shopIds } },
+      orderBy: { createdAt: "desc" },
+      distinct: ["shopId"],
+      select: {
+        shopId: true,
+        content: true,
+        author: { select: { displayName: true, username: true } },
+      },
+    }),
+  ]);
+
+  const momentByOwner = new Map(moments.map((m) => [m.authorId, m]));
+  const guestbookByShop = new Map(guestbooks.map((g) => [g.shopId, g]));
+  const activities: Record<string, StreetStripSlot["activity"]> = {};
+
+  for (const shop of shops) {
+    const moment = momentByOwner.get(shop.ownerId);
+    const guestbook = guestbookByShop.get(shop.id);
+    const authorName =
+      shop.owner.displayName ?? shop.owner.username;
+
+    if (moment) {
+      activities[shop.id] = {
+        shopId: shop.id,
+        authorName,
+        text: formatShopBubble(authorName, moment.body).text,
+      };
+    } else if (guestbook) {
+      const gbName =
+        guestbook.author.displayName ?? guestbook.author.username;
+      activities[shop.id] = {
+        shopId: shop.id,
+        authorName: gbName,
+        text: formatShopBubble(gbName, guestbook.content).text,
+      };
+    } else {
+      activities[shop.id] = null;
+    }
+  }
+
+  return activities;
+}
+
+export async function getStreetStripData(streetId: string): Promise<StreetStripSlot[]> {
+  const slots = await prisma.shopSlot.findMany({
+    where: { streetId },
+    orderBy: { slotIndex: "asc" },
+    include: {
+      shop: {
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          tagline: true,
+          coverUrl: true,
+          ownerId: true,
+          owner: { select: { username: true, displayName: true } },
+        },
+      },
+    },
+  });
+
+  const shops = slots
+    .map((s) => s.shop)
+    .filter((s): s is NonNullable<typeof s> => !!s);
+  const activities = await buildShopActivities(streetId, shops);
+
+  return slots.map((slot) => ({
+    id: slot.id,
+    slotIndex: slot.slotIndex,
+    isCenter: slot.isCenter,
+    status: slot.status,
+    shop: slot.shop
+      ? {
+          id: slot.shop.id,
+          slug: slot.shop.slug,
+          name: slot.shop.name,
+          tagline: slot.shop.tagline,
+          coverUrl: slot.shop.coverUrl,
+          owner: slot.shop.owner,
+        }
+      : null,
+    activity: slot.shop ? activities[slot.shop.id] ?? null : null,
+  }));
+}
+
+export async function getStreetPathBubbles(
+  streetId: string,
+  take = 12,
+): Promise<StreetPathBubble[]> {
+  const messages = await prisma.streetMessage.findMany({
+    where: { streetId, archived: false },
+    orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
+    take,
+    include: {
+      author: { select: { displayName: true, username: true } },
+    },
+  });
+
+  return messages.map((m) => ({
+    id: m.id,
+    authorName: m.author.displayName ?? m.author.username,
+    content: m.content,
+    isOfficial: m.isOfficial,
+    isPinned: m.isPinned,
+    createdAt: m.createdAt.toISOString(),
+  }));
+}
+
+export async function getStreetActivity(
+  streetSlug: string,
+): Promise<StreetActivityPayload | null> {
+  const street = await prisma.street.findUnique({
+    where: { slug: streetSlug },
+    select: { id: true },
+  });
+  if (!street) return null;
+
+  const [pathBubbles, slots] = await Promise.all([
+    getStreetPathBubbles(street.id),
+    getStreetStripData(street.id),
+  ]);
+
+  const shopActivities: Record<string, StreetStripSlot["activity"]> = {};
+  for (const slot of slots) {
+    if (slot.shop && slot.activity) {
+      shopActivities[slot.shop.id] = slot.activity;
+    }
+  }
+
+  return { pathBubbles, shopActivities };
+}
+
+export async function getApartmentRangeSummary(
+  streetId: string,
+): Promise<ApartmentRangeSummary[]> {
+  const buildings = await prisma.apartmentBuilding.findMany({
+    where: { streetId },
+    orderBy: { buildingNumber: "asc" },
+    include: {
+      units: { select: { residentId: true } },
+    },
+  });
+
+  const ranges = getApartmentRanges(buildings.length || 30);
+  return ranges.map((range) => {
+    const inRange = buildings.filter(
+      (b) => b.buildingNumber >= range.start && b.buildingNumber <= range.end,
+    );
+    const totalUnits = inRange.reduce((s, b) => s + b.units.length, 0);
+    const occupiedUnits = inRange.reduce(
+      (s, b) => s + b.units.filter((u) => u.residentId).length,
+      0,
+    );
+    return {
+      ...range,
+      totalUnits,
+      occupiedUnits,
+      buildings: inRange.map((b) => ({
+        id: b.id,
+        buildingNumber: b.buildingNumber,
+        occupiedCount: b.units.filter((u) => u.residentId).length,
+        totalUnits: b.units.length,
+      })),
+    };
+  });
+}
+
+export async function getConversations(userId: string) {
+  const participations = await prisma.conversationParticipant.findMany({
+    where: { userId },
+    include: {
+      conversation: {
+        include: {
+          participants: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  displayName: true,
+                  avatarUrl: true,
+                },
+              },
+            },
+          },
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            include: {
+              sender: {
+                select: { id: true, username: true, displayName: true },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { conversation: { updatedAt: "desc" } },
+  });
+
+  return participations.map((p) => {
+    const others = p.conversation.participants.filter((x) => x.userId !== userId);
+    const lastMessage = p.conversation.messages[0] ?? null;
+    const unread =
+      lastMessage &&
+      lastMessage.senderId !== userId &&
+      (!p.lastReadAt || lastMessage.createdAt > p.lastReadAt);
+
+    return {
+      id: p.conversation.id,
+      updatedAt: p.conversation.updatedAt,
+      participants: others.map((x) => x.user),
+      lastMessage,
+      unread: !!unread,
+    };
+  });
+}
+
+export async function getDirectMessages(conversationId: string, userId: string) {
+  const participant = await prisma.conversationParticipant.findUnique({
+    where: {
+      conversationId_userId: { conversationId, userId },
+    },
+  });
+  if (!participant) return null;
+
+  const messages = await prisma.directMessage.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: "asc" },
+    take: 200,
+    include: {
+      sender: {
+        select: { id: true, username: true, displayName: true, avatarUrl: true },
+      },
+    },
+  });
+
+  const others = await prisma.conversationParticipant.findMany({
+    where: { conversationId, userId: { not: userId } },
+    include: {
+      user: {
+        select: { id: true, username: true, displayName: true, avatarUrl: true },
+      },
+    },
+  });
+
+  return { messages, participants: others.map((o) => o.user) };
+}
+
+export async function getUnreadMessageCount(userId: string) {
+  const participations = await prisma.conversationParticipant.findMany({
+    where: { userId },
+    select: {
+      lastReadAt: true,
+      conversation: {
+        select: {
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { createdAt: true, senderId: true },
+          },
+        },
+      },
+    },
+  });
+
+  let count = 0;
+  for (const p of participations) {
+    const last = p.conversation.messages[0];
+    if (
+      last &&
+      last.senderId !== userId &&
+      (!p.lastReadAt || last.createdAt > p.lastReadAt)
+    ) {
+      count++;
+    }
+  }
+  return count;
+}
+
+export async function getBookmarkedPosts(userId: string, take = 50) {
+  const bookmarks = await prisma.bookmark.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take,
+    include: {
+      post: {
+        include: {
+          author: { select: { username: true, displayName: true, avatarUrl: true } },
+          images: { select: { url: true }, take: 1 },
+          _count: { select: { likes: true, comments: true } },
+        },
+      },
+    },
+  });
+  return bookmarks.map((b) => b.post);
+}
+
+export async function getPostBookmarkState(postId: string, userId?: string) {
+  if (!userId) return { bookmarked: false };
+  const row = await prisma.bookmark.findUnique({
+    where: { userId_postId: { userId, postId } },
+  });
+  return { bookmarked: !!row };
+}
+
+export async function findUserByUsername(username: string) {
+  return prisma.user.findUnique({
+    where: { username },
+    select: { id: true, username: true, displayName: true, avatarUrl: true },
   });
 }

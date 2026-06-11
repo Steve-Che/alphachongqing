@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import {
   getAdminDashboardStats,
   getRecentAdminActivity,
 } from "@/lib/queries";
+import { StreetChiefManager } from "@/components/admin/StreetChiefManager";
 import { formatDate } from "@/lib/utils";
 import { ArchiveMessageButton } from "@/components/admin/ArchiveMessageButton";
 import { getPostDetailPath } from "@/lib/post-path";
@@ -15,9 +17,25 @@ export default async function AdminDashboardPage() {
   const session = await auth();
   if (session?.user?.role !== "ADMIN") redirect("/");
 
-  const [stats, activity] = await Promise.all([
+  const [stats, activity, streets, users] = await Promise.all([
     getAdminDashboardStats(),
     getRecentAdminActivity(8),
+    prisma.street.findMany({
+      orderBy: { sortOrder: "asc" },
+      select: {
+        id: true,
+        nameZh: true,
+        slug: true,
+        serviceChief: {
+          select: { id: true, username: true, displayName: true },
+        },
+      },
+    }),
+    prisma.user.findMany({
+      take: 200,
+      orderBy: { createdAt: "asc" },
+      select: { id: true, username: true, displayName: true },
+    }),
   ]);
 
   return (
@@ -80,6 +98,11 @@ export default async function AdminDashboardPage() {
             <li className="text-stone-500">暂无评论</li>
           )}
         </ul>
+      </section>
+
+      <section>
+        <h2 className="mb-3 font-serif text-lg font-semibold">街道服务长任免</h2>
+        <StreetChiefManager streets={streets} users={users} />
       </section>
 
       <section>

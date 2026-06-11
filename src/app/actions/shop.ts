@@ -466,6 +466,7 @@ export async function addGuestbookEntry(
 export async function addStreetMessage(
   streetId: string,
   content: string,
+  options?: { asOfficial?: boolean },
 ): Promise<ActionResult> {
   const user = await getSessionUser();
   if (!user) return { ok: false, error: "请先登录" };
@@ -479,14 +480,71 @@ export async function addStreetMessage(
 
   const street = await prisma.street.findUnique({
     where: { id: streetId },
-    select: { slug: true },
+    select: { slug: true, serviceChiefId: true },
   });
+  if (!street) return { ok: false, error: "街道不存在" };
+
+  const wantsOfficial = options?.asOfficial === true;
+  const isChief = street.serviceChiefId === user.id;
+  const isAdmin = user.role === "ADMIN";
+
+  if (wantsOfficial && !isChief && !isAdmin) {
+    return { ok: false, error: "仅街道服务长可发官方公告" };
+  }
 
   await prisma.streetMessage.create({
-    data: { streetId, authorId: user.id, content: trimmed },
+    data: {
+      streetId,
+      authorId: user.id,
+      content: trimmed,
+      isOfficial: wantsOfficial,
+    },
   });
 
-  if (street) revalidatePath(`/street/${street.slug}`);
+  revalidatePath(`/street/${street.slug}`);
+  return { ok: true };
+}
+
+export async function updateShopSettings(data: {
+  name?: string;
+  tagline?: string;
+  coverUrl?: string | null;
+}): Promise<ActionResult> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "请先登录" };
+
+  const shop = await prisma.shop.findUnique({
+    where: { ownerId: user.id },
+    select: { id: true, slug: true },
+  });
+  if (!shop) return { ok: false, error: "您还没有店铺" };
+
+  const update: { name?: string; tagline?: string | null; coverUrl?: string | null } =
+    {};
+  if (data.name !== undefined) {
+    const trimmed = data.name.trim();
+    if (!trimmed) return { ok: false, error: "店铺名称不能为空" };
+    update.name = trimmed;
+  }
+  if (data.tagline !== undefined) {
+    update.tagline = data.tagline.trim() || null;
+  }
+  if (data.coverUrl !== undefined) {
+    update.coverUrl = data.coverUrl;
+  }
+
+  await prisma.shop.update({
+    where: { id: shop.id },
+    data: update,
+  });
+
+  revalidatePath(`/shop/${shop.slug}`);
+  revalidatePath("/settings");
+  const street = await prisma.shopSlot.findFirst({
+    where: { shop: { id: shop.id } },
+    select: { street: { select: { slug: true } } },
+  });
+  if (street?.street.slug) revalidatePath(`/street/${street.street.slug}`);
   return { ok: true };
 }
 
