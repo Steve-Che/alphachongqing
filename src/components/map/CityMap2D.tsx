@@ -25,6 +25,8 @@ import {
 } from "@/lib/chongqing/district-stats";
 import { encodeRouteSlug } from "@/lib/route-slug";
 import type { MapDistrictData } from "./CityCanvas";
+import type { PublicVenueMapItem } from "@/lib/queries";
+import { PublicVenueMapMarkers2D } from "./PublicVenueMapMarkers2D";
 
 export type Map2DDistrictData = MapDistrictData & {
   center: { x: number; z: number };
@@ -69,11 +71,13 @@ function MapGridDefs() {
 
 function CityMapLayer({
   districts,
+  publicVenues,
   hoveredSlug,
   onHover,
   onSelectDistrict,
 }: {
   districts: Map2DDistrictData[];
+  publicVenues?: PublicVenueMapItem[];
   hoveredSlug: string | null;
   onHover: (slug: string | null) => void;
   onSelectDistrict: (slug: string) => void;
@@ -229,6 +233,10 @@ function CityMapLayer({
           </g>
         );
       })}
+
+      {publicVenues && publicVenues.length > 0 && (
+        <PublicVenueMapMarkers2D venues={publicVenues} />
+      )}
     </svg>
   );
 }
@@ -343,7 +351,13 @@ function DistrictMapLayer({
   );
 }
 
-export function CityMap2D({ districts }: { districts: Map2DDistrictData[] }) {
+export function CityMap2D({
+  districts,
+  publicVenues = [],
+}: {
+  districts: Map2DDistrictData[];
+  publicVenues?: PublicVenueMapItem[];
+}) {
   const [level, setLevel] = useState<MapLevel>("city");
   const [districtSlug, setDistrictSlug] = useState<string | null>(null);
   const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
@@ -414,6 +428,7 @@ export function CityMap2D({ districts }: { districts: Map2DDistrictData[] }) {
       </p>
       <CityMapLayer
         districts={districts}
+        publicVenues={publicVenues}
         hoveredSlug={hoveredDistrict}
         onHover={setHoveredDistrict}
         onSelectDistrict={selectDistrict}

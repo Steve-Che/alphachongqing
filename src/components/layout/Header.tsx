@@ -24,6 +24,12 @@ export function Header() {
           >
             街坊手册
           </Link>
+          <Link
+            href="/places"
+            className="hidden text-xs text-stone-600 hover:text-stone-900 sm:inline-block"
+          >
+            公共区
+          </Link>
         </div>
         <div id="street-context-slot" className="min-w-0 flex-1 px-2" />
         <RetroIconBar />

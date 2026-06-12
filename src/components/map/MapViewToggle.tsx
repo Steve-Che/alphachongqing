@@ -5,6 +5,8 @@ import { CityMapLoader, type MapDistrictData } from "@/components/map/CityMapLoa
 import { CityMap2D, type Map2DDistrictData } from "@/components/map/CityMap2D";
 import { DistrictList } from "@/components/map/DistrictList";
 
+import type { PublicVenueMapItem } from "@/lib/queries";
+
 type DistrictListItem = Parameters<typeof DistrictList>[0]["districts"][number];
 type DistrictStatsMap = NonNullable<
   Parameters<typeof DistrictList>[0]["statsBySlug"]
@@ -16,10 +18,12 @@ export function MapViewToggle({
   mapData,
   districtList,
   statsBySlug,
+  publicVenues = [],
 }: {
   mapData: Map2DDistrictData[];
   districtList: DistrictListItem[];
   statsBySlug?: DistrictStatsMap;
+  publicVenues?: PublicVenueMapItem[];
 }) {
   const [mode, setMode] = useState<MapMode>("3d");
   const [webglFailed, setWebglFailed] = useState(false);
@@ -91,9 +95,12 @@ export function MapViewToggle({
         </p>
       )}
       {effectiveMode === "3d" ? (
-        <CityMapLoader districts={mapData as MapDistrictData[]} />
+        <CityMapLoader
+          districts={mapData as MapDistrictData[]}
+          publicVenues={publicVenues}
+        />
       ) : effectiveMode === "2d" ? (
-        <CityMap2D districts={mapData} />
+        <CityMap2D districts={mapData} publicVenues={publicVenues} />
       ) : (
         <DistrictList districts={districtList} statsBySlug={statsBySlug} />
       )}

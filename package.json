@@ -13,6 +13,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:sync-districts": "tsx prisma/sync-districts.ts",
+    "db:sync-public-venues": "tsx prisma/sync-public-venues.ts",
     "db:studio": "prisma studio",
     "test:e2e": "playwright test"
   },

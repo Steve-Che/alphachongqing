@@ -6,16 +6,21 @@ import { ResidenceBanner } from "@/components/residence/ResidenceBanner";
 import { HomeFeedPreview } from "@/components/feed/HomeFeedPreview";
 import { WelcomeBanner } from "@/components/guide/WelcomeBanner";
 import { computeDistrictStats } from "@/lib/chongqing/district-stats";
+import { venueTypeLabel } from "@/lib/chongqing/public-venues";
 import { getHomePageData, getFollowingFeed } from "@/lib/queries";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
   const session = await auth();
-  const { districtList, mapData, stats } = await getHomePageData();
+  const { districtList, mapData, stats, publicVenues } = await getHomePageData();
   const statsBySlug = Object.fromEntries(
     mapData.map((d) => [d.slug, computeDistrictStats(d)]),
   );
+
+  const flagshipPreview = publicVenues
+    .filter((v) => v.tier === "FLAGSHIP")
+    .slice(0, 3);
 
   const feedPreview =
     session?.user?.id
@@ -80,8 +85,39 @@ export default async function HomePage() {
           mapData={mapData}
           districtList={districtList}
           statsBySlug={statsBySlug}
+          publicVenues={publicVenues}
         />
       </section>
+
+      {flagshipPreview.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-serif text-lg font-semibold">城市公共区</h2>
+            <Link href="/places" className="text-sm text-accent hover:underline">
+              查看全部 →
+            </Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {flagshipPreview.map((v) => (
+              <Link
+                key={v.slug}
+                href={`/place/${v.slug}`}
+                className="rounded border border-stone-200 bg-paper p-4 hover:border-[#b84a2f]/40"
+              >
+                <span className="text-xs text-[#b84a2f]">
+                  {venueTypeLabel(v.type)}
+                </span>
+                <h3 className="mt-1 font-serif font-semibold">{v.nameZh}</h3>
+                {v.summary && (
+                  <p className="mt-1 line-clamp-2 text-sm text-stone-600">
+                    {v.summary}
+                  </p>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-3 font-serif text-lg font-semibold">

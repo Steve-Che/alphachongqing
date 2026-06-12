@@ -44,6 +44,20 @@ enum NotificationType {
   MESSAGE
 }
 
+enum PublicVenueTier {
+  FLAGSHIP
+  COMMUNITY
+}
+
+enum PublicVenueType {
+  LIBRARY
+  CONCERT_HALL
+  GALLERY
+  TEAHOUSE
+  SQUARE
+  COMMUNITY_HALL
+}
+
 model User {
   id             String         @id @default(cuid())
   email          String         @unique
@@ -75,6 +89,9 @@ model User {
   chiefOfStreets   Street[]         @relation("StreetServiceChief")
   conversationParticipants ConversationParticipant[]
   directMessages   DirectMessage[]
+  venueMessages    VenueMessage[]
+  publicEvents     PublicEvent[]
+  publicEventRsvps PublicEventRsvp[]
 
   @@index([username])
 }
@@ -259,19 +276,21 @@ model ApartmentUnit {
 }
 
 model Post {
-  id         String   @id @default(cuid())
-  type       PostType
-  title      String?
-  body       String
-  coverUrl   String?
-  authorId   String
-  streetId   String?
-  published  Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String   @id @default(cuid())
+  type           PostType
+  title          String?
+  body           String
+  coverUrl       String?
+  authorId       String
+  streetId       String?
+  publicVenueId  String?
+  published      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   street       Street?       @relation(fields: [streetId], references: [id], onDelete: SetNull)
+  publicVenue  PublicVenue?  @relation(fields: [publicVenueId], references: [id], onDelete: SetNull)
   images       ImageAsset[]
   roomContents RoomContent[]
   comments     Comment[]
@@ -281,6 +300,7 @@ model Post {
   @@index([authorId, type])
   @@index([createdAt])
   @@index([streetId, createdAt])
+  @@index([publicVenueId, createdAt])
 }
 
 model ImageAsset {
@@ -431,4 +451,94 @@ model DirectMessage {
 
   @@index([conversationId, createdAt])
   @@index([senderId])
+}
+
+model PublicVenue {
+  id           String          @id @default(cuid())
+  slug         String          @unique
+  nameZh       String
+  summary      String?
+  coverUrl     String?
+  tier         PublicVenueTier
+  type         PublicVenueType
+  districtSlug String
+  mapX         Float
+  mapZ         Float
+  sortOrder    Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  messages     VenueMessage[]
+  posts        Post[]
+  events       PublicEvent[]
+  libraryBooks LibraryBook[]
+
+  @@index([slug])
+  @@index([districtSlug])
+  @@index([tier, sortOrder])
+}
+
+model VenueMessage {
+  id        String   @id @default(cuid())
+  venueId   String
+  authorId  String
+  content   String
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  venue  PublicVenue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  author User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([venueId, createdAt])
+}
+
+model PublicEvent {
+  id          String    @id @default(cuid())
+  venueId     String
+  title       String
+  summary     String
+  body        String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  venue     PublicVenue       @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  createdBy User              @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  rsvps     PublicEventRsvp[]
+
+  @@index([venueId, startsAt])
+}
+
+model PublicEventRsvp {
+  eventId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  event PublicEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, userId])
+  @@index([userId])
+}
+
+model LibraryBook {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  author      String
+  language    String   @default("zh")
+  source      String
+  sourceUrl   String?
+  contentPath String
+  venueId     String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  venue PublicVenue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId, sortOrder])
 }

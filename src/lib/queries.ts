@@ -11,7 +11,7 @@ import type {
   StreetStripSlot,
 } from "@/lib/street-types";
 import type { ApartmentBuildingData } from "@/components/map/ApartmentTowers";
-import type { RoomType } from "@/generated/prisma/client";
+import type { RoomType, PublicVenueType, PublicVenueTier } from "@/generated/prisma/client";
 
 function toBuildingSummaries(
   buildings: {
@@ -336,7 +336,7 @@ export async function getInviteCodes() {
 
 /** 首页单次 district 大查询，同时产出地图、列表与统计 */
 export async function getHomePageData() {
-  const [districts, residents, shops, posts, apartmentResidents] =
+  const [districts, residents, shops, posts, apartmentResidents, publicVenues] =
     await Promise.all([
       prisma.district.findMany({
         orderBy: { nameZh: "asc" },
@@ -367,6 +367,19 @@ export async function getHomePageData() {
       prisma.shop.count(),
       prisma.post.count(),
       prisma.apartmentUnit.count({ where: { residentId: { not: null } } }),
+      prisma.publicVenue.findMany({
+        orderBy: { sortOrder: "asc" },
+        select: {
+          slug: true,
+          nameZh: true,
+          type: true,
+          tier: true,
+          mapX: true,
+          mapZ: true,
+          districtSlug: true,
+          summary: true,
+        },
+      }),
     ]);
 
   const stats = {
@@ -426,7 +439,7 @@ export async function getHomePageData() {
   };
   });
 
-  return { districtList: districts, mapData, stats };
+  return { districtList: districts, mapData, stats, publicVenues };
 }
 
 export async function getAllStreetsForSelect() {
@@ -1304,4 +1317,155 @@ export async function findUserByUsername(username: string) {
     where: { username },
     select: { id: true, username: true, displayName: true, avatarUrl: true },
   });
+}
+
+export type PublicVenueMapItem = {
+  slug: string;
+  nameZh: string;
+  type: PublicVenueType;
+  tier: PublicVenueTier;
+  mapX: number;
+  mapZ: number;
+  districtSlug: string;
+  summary: string | null;
+};
+
+export async function getPublicVenues(): Promise<PublicVenueMapItem[]> {
+  return prisma.publicVenue.findMany({
+    orderBy: { sortOrder: "asc" },
+    select: {
+      slug: true,
+      nameZh: true,
+      type: true,
+      tier: true,
+      mapX: true,
+      mapZ: true,
+      districtSlug: true,
+      summary: true,
+    },
+  });
+}
+
+export async function getPublicVenueBySlug(slug: string, userId?: string) {
+  const venue = await prisma.publicVenue.findUnique({
+    where: { slug },
+    include: {
+      messages: {
+        where: { archived: false },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+        include: {
+          author: { select: { username: true, displayName: true, avatarUrl: true } },
+        },
+      },
+      events: {
+        where: { startsAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+        orderBy: { startsAt: "asc" },
+        include: {
+          _count: { select: { rsvps: true } },
+          rsvps: userId
+            ? { where: { userId }, select: { userId: true } }
+            : false,
+          createdBy: { select: { username: true, displayName: true } },
+        },
+      },
+      libraryBooks: { orderBy: { sortOrder: "asc" } },
+      posts: {
+        where: { type: "MOMENT", published: true },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: {
+          author: { select: { username: true, displayName: true, avatarUrl: true } },
+          images: { select: { url: true } },
+        },
+      },
+    },
+  });
+  if (!venue) return null;
+
+  const galleryArticles =
+    venue.type === "GALLERY"
+      ? await prisma.post.findMany({
+          where: {
+            type: "ARTICLE",
+            published: true,
+            OR: [{ publicVenueId: venue.id }, { publicVenueId: null }],
+          },
+          orderBy: { createdAt: "desc" },
+          take: 6,
+          include: {
+            author: { select: { username: true, displayName: true } },
+          },
+        })
+      : [];
+
+  return { ...venue, galleryArticles };
+}
+
+export async function getDistrictPublicEvents(districtSlug: string, userId?: string) {
+  const venues = await prisma.publicVenue.findMany({
+    where: { districtSlug },
+    select: { id: true },
+  });
+  const venueIds = venues.map((v) => v.id);
+  if (venueIds.length === 0) return [];
+
+  return prisma.publicEvent.findMany({
+    where: {
+      venueId: { in: venueIds },
+      startsAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+    },
+    orderBy: { startsAt: "asc" },
+    take: 10,
+    include: {
+      venue: { select: { slug: true, nameZh: true } },
+      _count: { select: { rsvps: true } },
+      rsvps: userId ? { where: { userId }, select: { userId: true } } : false,
+    },
+  });
+}
+
+export async function getLibraryBookBySlug(bookSlug: string) {
+  return prisma.libraryBook.findUnique({
+    where: { slug: bookSlug },
+    include: { venue: { select: { slug: true, nameZh: true } } },
+  });
+}
+
+export async function getVenueFeed(
+  venueId: string,
+  take = 20,
+  cursor?: string,
+): Promise<{
+  items: {
+    id: string;
+    body: string;
+    createdAt: Date;
+    author: { username: string; displayName: string | null; avatarUrl: string | null };
+    images: { url: string }[];
+  }[];
+  nextCursor: string | null;
+}> {
+  const before = cursor ? new Date(cursor) : null;
+  const items = await prisma.post.findMany({
+    where: {
+      publicVenueId: venueId,
+      type: "MOMENT",
+      published: true,
+      ...(before ? { createdAt: { lt: before } } : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    take: take + 1,
+    include: {
+      author: { select: { username: true, displayName: true, avatarUrl: true } },
+      images: { select: { url: true } },
+    },
+  });
+
+  const hasMore = items.length > take;
+  const page = hasMore ? items.slice(0, take) : items;
+  return {
+    items: page,
+    nextCursor: hasMore ? page[page.length - 1]!.createdAt.toISOString() : null,
+  };
 }

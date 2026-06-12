@@ -23,6 +23,8 @@ import { encodeRouteSlug } from "@/lib/route-slug";
 import type { MeResidence } from "@/lib/residence-types";
 import { ApartmentBuildingPanel } from "./ApartmentBuildingPanel";
 import type { ApartmentBuildingData } from "./ApartmentTowers";
+import { PublicVenueMarkers } from "./PublicVenueMarkers";
+import type { PublicVenueMapItem } from "@/lib/queries";
 import { SketchupSceneLighting } from "./sketchup-materials";
 
 export type MapStreetData = {
@@ -48,9 +50,10 @@ export type MapDistrictData = {
 
 type CityCanvasProps = {
   districts?: MapDistrictData[];
+  publicVenues?: PublicVenueMapItem[];
 };
 
-export function CityCanvas({ districts = [] }: CityCanvasProps) {
+export function CityCanvas({ districts = [], publicVenues = [] }: CityCanvasProps) {
   const [level, setLevel] = useState<MapLevel>("city");
   const [districtSlug, setDistrictSlug] = useState<string | null>(null);
   const [streetSlug, setStreetSlug] = useState<string | null>(null);
@@ -205,6 +208,10 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
             <SketchupSceneLighting />
             <TerrainLayer />
             <RiverLayer />
+
+            {level === "city" && publicVenues.length > 0 && (
+              <PublicVenueMarkers venues={publicVenues} />
+            )}
 
             {level !== "street" &&
               [...DISTRICTS]
