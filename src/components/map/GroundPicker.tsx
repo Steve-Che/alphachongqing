@@ -95,7 +95,7 @@ export function GroundPicker({
       onClick={handleClick}
       renderOrder={10}
     >
-      <planeGeometry args={[120, 120]} />
+      <planeGeometry args={[140, 140]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} />
     </mesh>
   );

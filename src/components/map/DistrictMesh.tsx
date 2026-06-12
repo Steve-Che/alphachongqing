@@ -7,6 +7,7 @@ import { SketchEdges, ToonFaceMaterial } from "./sketchup-materials";
 
 const PLATE_Y = 0.2;
 const EXTRUDE_DEPTH = 0.35;
+const ELEVATION_STEP = 0.025;
 
 type DistrictMeshProps = {
   district: DistrictGeo;
@@ -34,13 +35,14 @@ export function DistrictMesh({
   const shape = useMemo(() => buildShape(district.boundary), [district.boundary]);
   const active = hovered || highlighted;
   const color = dimmed ? "#b8b0a4" : district.color;
+  const plateY = PLATE_Y + district.elevation * ELEVATION_STEP;
 
   return (
     <group>
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, PLATE_Y, 0]}
-        renderOrder={2}
+        position={[0, plateY, 0]}
+        renderOrder={2 + district.elevation}
         raycast={() => null}
       >
         <extrudeGeometry args={[shape, { depth: EXTRUDE_DEPTH, bevelEnabled: false }]} />

@@ -1,4 +1,5 @@
 import type { GeoPoint } from "./geo";
+import { CITY_MAP_FOCUS } from "./geo";
 
 export type MapLevel = "city" | "district" | "street";
 
@@ -10,10 +11,10 @@ export type CameraPreset = {
 };
 
 const CITY_PRESET: CameraPreset = {
-  position: [0, 78, 78],
-  target: [0, 0, 0],
-  minDistance: 42,
-  maxDistance: 130,
+  position: [CITY_MAP_FOCUS.x + 4, 98, CITY_MAP_FOCUS.z + 98],
+  target: [CITY_MAP_FOCUS.x, 0, CITY_MAP_FOCUS.z],
+  minDistance: 58,
+  maxDistance: 158,
 };
 
 export function getCameraPreset(

@@ -219,6 +219,16 @@ export function getDistrictStreetLayout(
   return { blocks, roads };
 }
 
+/** 多边形面积（用于渲染排序：大区先画、小区压在上层） */
+export function polygonArea(boundary: GeoPoint[]): number {
+  let area = 0;
+  for (let i = 0, j = boundary.length - 1; i < boundary.length; j = i++) {
+    area +=
+      (boundary[j].x + boundary[i].x) * (boundary[j].z - boundary[i].z);
+  }
+  return Math.abs(area / 2);
+}
+
 /** 城区名简写（去掉「区」） */
 export function districtShortName(nameZh: string): string {
   return nameZh.replace(/区$/, "");

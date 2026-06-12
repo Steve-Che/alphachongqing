@@ -13,6 +13,7 @@ import {
   getCityRoadSegments,
   getDistrictStreetLayout,
   getRiverBandPaths,
+  polygonArea,
   sceneSegmentToSvg,
   sceneToSvg,
   splitStreetLabel,
@@ -82,13 +83,15 @@ function CityMapLayer({
 
   const districtCells = useMemo(
     () =>
-      districts.map((d) => ({
-        slug: d.slug,
-        nameZh: d.nameZh,
-        cells: boundaryToGridCells(d.boundary),
-        center: sceneToSvg(d.center.x, d.center.z),
-        stats: computeDistrictStats(d),
-      })),
+      [...districts]
+        .sort((a, b) => polygonArea(b.boundary) - polygonArea(a.boundary))
+        .map((d) => ({
+          slug: d.slug,
+          nameZh: d.nameZh,
+          cells: boundaryToGridCells(d.boundary),
+          center: sceneToSvg(d.center.x, d.center.z),
+          stats: computeDistrictStats(d),
+        })),
     [districts],
   );
 
@@ -152,12 +155,11 @@ function CityMapLayer({
         })}
 
       {districtCells.map((d) => {
-        const short = districtShortName(d.nameZh);
         const isHovered = hoveredSlug === d.slug;
 
         return (
           <g
-            key={d.slug}
+            key={`cells-${d.slug}`}
             onMouseEnter={() => onHover(d.slug)}
             onMouseLeave={() => onHover(null)}
           >
@@ -175,6 +177,15 @@ function CityMapLayer({
                 onClick={() => onSelectDistrict(d.slug)}
               />
             ))}
+          </g>
+        );
+      })}
+
+      {districtCells.map((d) => {
+        const short = districtShortName(d.nameZh);
+
+        return (
+          <g key={`labels-${d.slug}`} className="pointer-events-none">
             <rect
               x={d.center.sx - 5}
               y={d.center.sy - 7}
@@ -182,13 +193,12 @@ function CityMapLayer({
               height={3.5}
               rx={0.4}
               fill={MAP2D.tag}
-              className="pointer-events-none"
             />
             <text
               x={d.center.sx}
               y={d.center.sy - 5}
               textAnchor="middle"
-              className="map-retro-tag pointer-events-none select-none"
+              className="map-retro-tag select-none"
             >
               {short.slice(0, 2)}
             </text>
@@ -196,7 +206,7 @@ function CityMapLayer({
               x={d.center.sx}
               y={d.center.sy + 0.5}
               textAnchor="middle"
-              className="map-retro-label pointer-events-none select-none font-semibold"
+              className="map-retro-label select-none font-semibold"
             >
               {short}
             </text>
@@ -204,7 +214,7 @@ function CityMapLayer({
               x={d.center.sx}
               y={d.center.sy + 3.8}
               textAnchor="middle"
-              className="map-retro-stats pointer-events-none select-none"
+              className="map-retro-stats select-none"
             >
               店 {d.stats.occupiedShops}/{d.stats.totalShops}
             </text>
@@ -212,7 +222,7 @@ function CityMapLayer({
               x={d.center.sx}
               y={d.center.sy + 6.5}
               textAnchor="middle"
-              className="map-retro-stats pointer-events-none select-none"
+              className="map-retro-stats select-none"
             >
               寓 {d.stats.occupiedApartments}/{d.stats.totalApartments}
             </text>

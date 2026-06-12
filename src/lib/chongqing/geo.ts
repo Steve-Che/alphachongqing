@@ -17,6 +17,9 @@ export type DistrictGeo = {
 /** 抽象场景坐标，保持渝中居中、江北在北、南岸在南的相对关系 */
 export const SCENE_BOUNDS = { min: -50, max: 50 } as const;
 
+/** 全城视角相机注视点（略偏南以平衡八区分布） */
+export const CITY_MAP_FOCUS: GeoPoint = { x: 0, z: 4 };
+
 export const DISTRICTS: DistrictGeo[] = [
   {
     slug: "yuzhong",
@@ -61,8 +64,8 @@ export const DISTRICTS: DistrictGeo[] = [
       { x: -12, z: 14 },
       { x: 15, z: 14 },
       { x: 16, z: 18 },
-      { x: 15, z: 34 },
-      { x: -12, z: 34 },
+      { x: 15, z: 32 },
+      { x: -12, z: 32 },
       { x: -14, z: 18 },
     ],
   },
@@ -125,8 +128,8 @@ export const DISTRICTS: DistrictGeo[] = [
       { x: 16, z: -42 },
       { x: 42, z: -42 },
       { x: 44, z: -28 },
-      { x: 42, z: -16 },
-      { x: 16, z: -16 },
+      { x: 42, z: -13 },
+      { x: 16, z: -13 },
       { x: 14, z: -28 },
     ],
   },
@@ -134,16 +137,16 @@ export const DISTRICTS: DistrictGeo[] = [
     slug: "banan",
     nameZh: "巴南区",
     summary: "主城南端，花溪河畔与鱼洞老城相依。",
-    center: { x: -2, z: 40 },
+    center: { x: -12, z: 43 },
     elevation: 3,
     color: "#8B9A7B",
     boundary: [
-      { x: -20, z: 32 },
-      { x: 18, z: 32 },
-      { x: 20, z: 36 },
-      { x: 18, z: 48 },
-      { x: -20, z: 48 },
-      { x: -22, z: 40 },
+      { x: -28, z: 36 },
+      { x: 10, z: 36 },
+      { x: 12, z: 40 },
+      { x: 10, z: 50 },
+      { x: -28, z: 50 },
+      { x: -30, z: 43 },
     ],
   },
 ];

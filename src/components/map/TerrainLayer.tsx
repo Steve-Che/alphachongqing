@@ -11,7 +11,7 @@ export function TerrainLayer() {
       raycast={() => null}
       renderOrder={0}
     >
-      <planeGeometry args={[120, 120]} />
+      <planeGeometry args={[140, 140]} />
       <ToonFaceMaterial color="#6b7c5e" />
       <SketchEdges threshold={5} />
     </mesh>

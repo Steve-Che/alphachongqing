@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Canvas } from "@react-three/fiber";
 import { DISTRICTS } from "@/lib/chongqing/geo";
+import { polygonArea } from "@/lib/chongqing/map2d-geometry";
 import type { MapLevel } from "@/lib/chongqing/camera";
 import { getStreetWorldPosition } from "@/lib/chongqing/pick";
 import { TerrainLayer } from "./TerrainLayer";
@@ -195,7 +196,7 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
     <div className="relative">
       <div className="h-[65vh] min-h-[460px] w-full rounded-lg border border-stone-200 bg-[#d4ddd0]">
         <Canvas
-          camera={{ position: [0, 78, 78], fov: 42, near: 0.1, far: 500 }}
+          camera={{ position: [4, 98, 102], fov: 40, near: 0.1, far: 520 }}
           gl={{ antialias: true }}
           style={{ touchAction: level === "street" ? "none" : "pan-y" }}
         >
@@ -206,7 +207,9 @@ export function CityCanvas({ districts = [] }: CityCanvasProps) {
             <RiverLayer />
 
             {level !== "street" &&
-              DISTRICTS.map((d) => (
+              [...DISTRICTS]
+                .sort((a, b) => polygonArea(a.boundary) - polygonArea(b.boundary))
+                .map((d) => (
                 <DistrictMesh
                   key={d.slug}
                   district={d}

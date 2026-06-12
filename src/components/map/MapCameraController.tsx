@@ -42,8 +42,8 @@ export function MapCameraController({
 }: MapCameraControllerProps) {
   const controlsRef = useRef<MapControlsImpl>(null);
   const { camera } = useThree();
-  const desiredPos = useRef(new THREE.Vector3(0, 78, 78));
-  const desiredTarget = useRef(new THREE.Vector3(0, 0, 0));
+  const desiredPos = useRef(new THREE.Vector3(4, 98, 102));
+  const desiredTarget = useRef(new THREE.Vector3(0, 0, 4));
   const animating = useRef(false);
 
   const preset = resolvePreset(level, focusCenter, focusStreet);
