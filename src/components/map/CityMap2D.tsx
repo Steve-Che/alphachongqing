@@ -2,7 +2,21 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { RIVERS, SCENE_BOUNDS } from "@/lib/chongqing/geo";
+import {
+  MAP2D,
+  MAP2D_PATTERN_ID,
+  map2dActivityFill,
+} from "@/lib/chongqing/map2d-style";
+import {
+  boundaryToGridCells,
+  districtShortName,
+  getCityRoadSegments,
+  getDistrictStreetLayout,
+  getRiverBandPaths,
+  sceneSegmentToSvg,
+  sceneToSvg,
+  splitStreetLabel,
+} from "@/lib/chongqing/map2d-geometry";
 import { encodeRouteSlug } from "@/lib/route-slug";
 import type { MapDistrictData } from "./CityCanvas";
 
@@ -14,50 +28,275 @@ export type Map2DDistrictData = MapDistrictData & {
 
 type MapLevel = "city" | "district";
 
-const VB = 100;
-const PAD = 4;
-
-function sceneToSvg(x: number, z: number): { sx: number; sy: number } {
-  const span = SCENE_BOUNDS.max - SCENE_BOUNDS.min;
-  const sx =
-    PAD + ((x - SCENE_BOUNDS.min) / span) * (VB - PAD * 2);
-  const sy =
-    PAD + ((SCENE_BOUNDS.max - z) / span) * (VB - PAD * 2);
-  return { sx, sy };
-}
-
-function boundaryToPoints(boundary: { x: number; z: number }[]): string {
-  return boundary
-    .map((p) => {
-      const { sx, sy } = sceneToSvg(p.x, p.z);
-      return `${sx},${sy}`;
-    })
-    .join(" ");
-}
-
-function riverToPath(points: { x: number; z: number }[]): string {
-  return points
-    .map((p, i) => {
-      const { sx, sy } = sceneToSvg(p.x, p.z);
-      return `${i === 0 ? "M" : "L"} ${sx} ${sy}`;
-    })
-    .join(" ");
-}
+const VB = MAP2D.viewBox;
 
 function streetActivity(street: MapDistrictData["streets"][number]): number {
   const shops = street.slots.filter(
     (s) => !s.isCenter && s.status === "OCCUPIED",
   ).length;
   const apt = street.apartmentsSummary;
-  const aptRatio = apt?.totalUnits
-    ? apt.occupiedUnits / apt.totalUnits
-    : 0;
+  const aptRatio = apt?.totalUnits ? apt.occupiedUnits / apt.totalUnits : 0;
   return shops + aptRatio * 8;
+}
+
+function MapGridDefs() {
+  const size = MAP2D.gridCellSize;
+  return (
+    <defs>
+      <pattern
+        id={MAP2D_PATTERN_ID}
+        width={size}
+        height={size}
+        patternUnits="userSpaceOnUse"
+      >
+        <rect width={size} height={size} fill={MAP2D.bg} />
+        <path
+          d={`M ${size} 0 L 0 0 0 ${size}`}
+          fill="none"
+          stroke="#E8E0D4"
+          strokeWidth={0.15}
+        />
+      </pattern>
+    </defs>
+  );
+}
+
+function CityMapLayer({
+  districts,
+  hoveredSlug,
+  onHover,
+  onSelectDistrict,
+}: {
+  districts: Map2DDistrictData[];
+  hoveredSlug: string | null;
+  onHover: (slug: string | null) => void;
+  onSelectDistrict: (slug: string) => void;
+}) {
+  const roads = useMemo(() => getCityRoadSegments(), []);
+  const rivers = useMemo(() => getRiverBandPaths(), []);
+
+  const districtCells = useMemo(
+    () =>
+      districts.map((d) => ({
+        slug: d.slug,
+        nameZh: d.nameZh,
+        cells: boundaryToGridCells(d.boundary),
+        center: sceneToSvg(d.center.x, d.center.z),
+      })),
+    [districts],
+  );
+
+  return (
+    <svg
+      viewBox={`0 0 ${VB} ${VB}`}
+      className="mx-auto block h-auto w-full max-w-2xl"
+      role="img"
+      aria-label="阿尔法重庆平面地图"
+    >
+      <MapGridDefs />
+      <rect x={0} y={0} width={VB} height={VB} fill={`url(#${MAP2D_PATTERN_ID})`} />
+
+      {rivers.map((river, i) => (
+        <path
+          key={`river-${i}`}
+          d={river.d}
+          fill="none"
+          stroke={MAP2D.river}
+          strokeWidth={river.width}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity={0.55}
+        />
+      ))}
+
+      {roads
+        .filter((r) => !r.main)
+        .map((r, i) => {
+          const seg = sceneSegmentToSvg(r.x1, r.z1, r.x2, r.z2);
+          return (
+            <line
+              key={`sec-${i}`}
+              x1={seg.x1}
+              y1={seg.y1}
+              x2={seg.x2}
+              y2={seg.y2}
+              stroke={MAP2D.roadSecondary}
+              strokeWidth={MAP2D.roadSecondaryWidth}
+              strokeLinecap="square"
+            />
+          );
+        })}
+
+      {roads
+        .filter((r) => r.main)
+        .map((r, i) => {
+          const seg = sceneSegmentToSvg(r.x1, r.z1, r.x2, r.z2);
+          return (
+            <line
+              key={`main-${i}`}
+              x1={seg.x1}
+              y1={seg.y1}
+              x2={seg.x2}
+              y2={seg.y2}
+              stroke={MAP2D.roadMain}
+              strokeWidth={MAP2D.roadMainWidth}
+              strokeLinecap="square"
+            />
+          );
+        })}
+
+      {districtCells.map((d) => {
+        const short = districtShortName(d.nameZh);
+        const isHovered = hoveredSlug === d.slug;
+
+        return (
+          <g
+            key={d.slug}
+            onMouseEnter={() => onHover(d.slug)}
+            onMouseLeave={() => onHover(null)}
+          >
+            {d.cells.map((cell, ci) => (
+              <rect
+                key={`${d.slug}-${ci}`}
+                x={cell.x}
+                y={cell.y}
+                width={cell.w}
+                height={cell.h}
+                fill={isHovered ? MAP2D.blockHover : MAP2D.block}
+                stroke={MAP2D.blockStroke}
+                strokeWidth={0.2}
+                className="map-retro-block cursor-pointer"
+                onClick={() => onSelectDistrict(d.slug)}
+              />
+            ))}
+            <rect
+              x={d.center.sx - 5}
+              y={d.center.sy - 7}
+              width={10}
+              height={3.5}
+              rx={0.4}
+              fill={MAP2D.tag}
+              className="pointer-events-none"
+            />
+            <text
+              x={d.center.sx}
+              y={d.center.sy - 5}
+              textAnchor="middle"
+              className="map-retro-tag pointer-events-none select-none"
+            >
+              {short.slice(0, 2)}
+            </text>
+            <text
+              x={d.center.sx}
+              y={d.center.sy + 1}
+              textAnchor="middle"
+              className="map-retro-label pointer-events-none select-none font-semibold"
+            >
+              {short}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function DistrictMapLayer({
+  district,
+  maxStreetActivity,
+}: {
+  district: Map2DDistrictData;
+  maxStreetActivity: number;
+}) {
+  const { blocks, roads } = useMemo(
+    () => getDistrictStreetLayout(district.streets),
+    [district.streets],
+  );
+
+  return (
+    <svg
+      viewBox={`0 0 ${VB} ${VB}`}
+      className="mx-auto block h-auto w-full max-w-2xl"
+      role="img"
+      aria-label={`${district.nameZh}街道地图`}
+    >
+      <MapGridDefs />
+      <rect x={0} y={0} width={VB} height={VB} fill={`url(#${MAP2D_PATTERN_ID})`} />
+
+      {roads
+        .filter((r) => !r.main)
+        .map((r, i) => (
+          <line
+            key={`d-sec-${i}`}
+            x1={r.x1}
+            y1={r.y1}
+            x2={r.x2}
+            y2={r.y2}
+            stroke={MAP2D.roadSecondary}
+            strokeWidth={MAP2D.roadSecondaryWidth}
+            strokeLinecap="square"
+          />
+        ))}
+
+      {roads
+        .filter((r) => r.main)
+        .map((r, i) => (
+          <line
+            key={`d-main-${i}`}
+            x1={r.x1}
+            y1={r.y1}
+            x2={r.x2}
+            y2={r.y2}
+            stroke={MAP2D.roadMain}
+            strokeWidth={MAP2D.roadMainWidth}
+            strokeLinecap="square"
+          />
+        ))}
+
+      {blocks.map((block) => {
+        const street = district.streets.find((s) => s.slug === block.slug);
+        const activity = street ? streetActivity(street) : 0;
+        const intensity = 0.2 + (activity / maxStreetActivity) * 0.5;
+        const fill = map2dActivityFill(intensity);
+        const lines = splitStreetLabel(block.nameZh);
+        const href = `/street/${encodeRouteSlug(block.slug)}`;
+
+        return (
+          <a key={block.slug} href={href} className="map-retro-block">
+            <rect
+              x={block.x}
+              y={block.y}
+              width={block.w}
+              height={block.h}
+              fill={fill}
+              stroke={MAP2D.blockStroke}
+              strokeWidth={0.35}
+              rx={0.3}
+            />
+            {lines.map((line, li) => (
+              <text
+                key={li}
+                x={block.x + block.w / 2}
+                y={block.y + block.h / 2 + (li - (lines.length - 1) / 2) * 3.2}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="map-retro-label pointer-events-none select-none"
+                style={{ fontSize: lines.length > 1 ? "2.6px" : "3px" }}
+              >
+                {line}
+              </text>
+            ))}
+          </a>
+        );
+      })}
+    </svg>
+  );
 }
 
 export function CityMap2D({ districts }: { districts: Map2DDistrictData[] }) {
   const [level, setLevel] = useState<MapLevel>("city");
   const [districtSlug, setDistrictSlug] = useState<string | null>(null);
+  const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
 
   const district = useMemo(
     () => districts.find((d) => d.slug === districtSlug) ?? null,
@@ -69,16 +308,24 @@ export function CityMap2D({ districts }: { districts: Map2DDistrictData[] }) {
     return Math.max(1, ...district.streets.map(streetActivity));
   }, [district]);
 
+  const goToCity = () => {
+    setLevel("city");
+    setDistrictSlug(null);
+    setHoveredDistrict(null);
+  };
+
+  const selectDistrict = (slug: string) => {
+    setDistrictSlug(slug);
+    setLevel("district");
+  };
+
   if (level === "district" && district) {
     return (
-      <div className="rounded-lg border border-stone-300 bg-[#f0ebe3] p-4">
-        <nav className="mb-3 flex flex-wrap items-center gap-2 text-sm text-stone-600">
+      <div className="rounded-lg border border-stone-200 bg-[#F5F1E6] p-3">
+        <nav className="mb-2 flex flex-wrap items-center gap-2 text-sm text-stone-600">
           <button
             type="button"
-            onClick={() => {
-              setLevel("city");
-              setDistrictSlug(null);
-            }}
+            onClick={goToCity}
             className="hover:text-[#b84a2f] hover:underline"
           >
             城市
@@ -86,53 +333,14 @@ export function CityMap2D({ districts }: { districts: Map2DDistrictData[] }) {
           <span>/</span>
           <span className="font-medium text-stone-900">{district.nameZh}</span>
         </nav>
-        <p className="mb-3 text-xs text-stone-500">
+        <p className="mb-2 text-center text-xs text-stone-500">
           点击街道进入街景 · 色块越深表示越热闹
         </p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {district.streets.map((street) => {
-            const activity = streetActivity(street);
-            const intensity = 0.35 + (activity / maxStreetActivity) * 0.65;
-            const occupiedShops = street.slots.filter(
-              (s) => !s.isCenter && s.status === "OCCUPIED",
-            ).length;
-            const rentable = street.slots.filter((s) => !s.isCenter).length;
-
-            return (
-              <Link
-                key={street.slug}
-                href={`/street/${encodeRouteSlug(street.slug)}`}
-                className="group rounded border border-stone-300 bg-paper p-3 shadow-sm transition hover:border-[#b84a2f]/50 hover:shadow"
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${district.color} ${Math.round(intensity * 55)}%, #faf6ee)`,
-                }}
-              >
-                <p className="font-serif text-sm font-semibold text-stone-900 group-hover:text-[#b84a2f]">
-                  {street.nameZh}
-                </p>
-                <p className="mt-1 text-[10px] text-stone-600">
-                  店铺 {occupiedShops}/{rentable}
-                  {street.apartmentsSummary && (
-                    <>
-                      {" "}
-                      · 公寓入住{" "}
-                      {Math.round(
-                        (street.apartmentsSummary.occupiedUnits /
-                          Math.max(street.apartmentsSummary.totalUnits, 1)) *
-                          100,
-                      )}
-                      %
-                    </>
-                  )}
-                </p>
-                <span className="mt-2 inline-block text-[10px] text-[#b84a2f] opacity-0 transition group-hover:opacity-100">
-                  进入街道 →
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-        <div className="mt-3 text-center">
+        <DistrictMapLayer
+          district={district}
+          maxStreetActivity={maxStreetActivity}
+        />
+        <div className="mt-2 text-center">
           <Link
             href={`/district/${district.slug}`}
             className="text-xs text-stone-500 hover:text-[#b84a2f] hover:underline"
@@ -145,81 +353,16 @@ export function CityMap2D({ districts }: { districts: Map2DDistrictData[] }) {
   }
 
   return (
-    <div className="rounded-lg border border-stone-300 bg-[#e8dfd0] p-2">
-      <p className="mb-2 text-center text-xs text-stone-600">
-        平面城市地图 · 点击区域下钻到街道
+    <div className="rounded-lg border border-stone-200 bg-[#F5F1E6] p-3">
+      <p className="mb-2 text-center text-xs text-stone-500">
+        点击城区进入街道网格
       </p>
-      <svg
-        viewBox={`0 0 ${VB} ${VB}`}
-        className="mx-auto block h-auto w-full max-w-2xl"
-        role="img"
-        aria-label="阿尔法重庆平面地图"
-      >
-        <rect x={0} y={0} width={VB} height={VB} fill="#e8dfd0" />
-        <path
-          d={riverToPath(RIVERS.yangtze)}
-          fill="none"
-          stroke="#6a9ab8"
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          opacity={0.7}
-        />
-        <path
-          d={riverToPath(RIVERS.jialing)}
-          fill="none"
-          stroke="#5a8aa8"
-          strokeWidth={2}
-          strokeLinecap="round"
-          opacity={0.65}
-        />
-        {districts.map((d) => {
-          const occupied = d.streets.reduce((sum, s) => {
-            return (
-              sum +
-              s.slots.filter((sl) => !sl.isCenter && sl.status === "OCCUPIED")
-                .length
-            );
-          }, 0);
-          const { sx, sy } = sceneToSvg(d.center.x, d.center.z);
-
-          return (
-            <g key={d.slug}>
-              {d.boundary.length > 0 && (
-                <polygon
-                  points={boundaryToPoints(d.boundary)}
-                  fill={d.color}
-                  fillOpacity={0.55}
-                  stroke="#5a4a3a"
-                  strokeWidth={0.4}
-                  className="cursor-pointer transition hover:fill-opacity-80"
-                  onClick={() => {
-                    setDistrictSlug(d.slug);
-                    setLevel("district");
-                  }}
-                />
-              )}
-              <text
-                x={sx}
-                y={sy}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                className="pointer-events-none select-none fill-stone-900 text-[3.5px] font-semibold"
-                style={{ fontFamily: "serif" }}
-              >
-                {d.nameZh.replace("区", "")}
-              </text>
-              <text
-                x={sx}
-                y={sy + 3.5}
-                textAnchor="middle"
-                className="pointer-events-none select-none fill-stone-700 text-[2.5px]"
-              >
-                {occupied} 铺
-              </text>
-            </g>
-          );
-        })}
-      </svg>
+      <CityMapLayer
+        districts={districts}
+        hoveredSlug={hoveredDistrict}
+        onHover={setHoveredDistrict}
+        onSelectDistrict={selectDistrict}
+      />
     </div>
   );
 }
