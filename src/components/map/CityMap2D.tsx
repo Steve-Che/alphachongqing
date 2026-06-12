@@ -17,6 +17,11 @@ import {
   sceneToSvg,
   splitStreetLabel,
 } from "@/lib/chongqing/map2d-geometry";
+import {
+  computeDistrictStats,
+  formatDistrictStatsLine,
+  formatStreetStatsLine,
+} from "@/lib/chongqing/district-stats";
 import { encodeRouteSlug } from "@/lib/route-slug";
 import type { MapDistrictData } from "./CityCanvas";
 
@@ -82,6 +87,7 @@ function CityMapLayer({
         nameZh: d.nameZh,
         cells: boundaryToGridCells(d.boundary),
         center: sceneToSvg(d.center.x, d.center.z),
+        stats: computeDistrictStats(d),
       })),
     [districts],
   );
@@ -188,11 +194,27 @@ function CityMapLayer({
             </text>
             <text
               x={d.center.sx}
-              y={d.center.sy + 1}
+              y={d.center.sy + 0.5}
               textAnchor="middle"
               className="map-retro-label pointer-events-none select-none font-semibold"
             >
               {short}
+            </text>
+            <text
+              x={d.center.sx}
+              y={d.center.sy + 3.8}
+              textAnchor="middle"
+              className="map-retro-stats pointer-events-none select-none"
+            >
+              店 {d.stats.occupiedShops}/{d.stats.totalShops}
+            </text>
+            <text
+              x={d.center.sx}
+              y={d.center.sy + 6.5}
+              textAnchor="middle"
+              className="map-retro-stats pointer-events-none select-none"
+            >
+              寓 {d.stats.occupiedApartments}/{d.stats.totalApartments}
             </text>
           </g>
         );
@@ -260,6 +282,8 @@ function DistrictMapLayer({
         const fill = map2dActivityFill(intensity);
         const lines = splitStreetLabel(block.nameZh);
         const href = `/street/${encodeRouteSlug(block.slug)}`;
+        const statsLine = street ? formatStreetStatsLine(street) : "";
+        const nameOffset = lines.length > 1 ? -2.2 : -1.2;
 
         return (
           <a key={block.slug} href={href} className="map-retro-block">
@@ -277,15 +301,31 @@ function DistrictMapLayer({
               <text
                 key={li}
                 x={block.x + block.w / 2}
-                y={block.y + block.h / 2 + (li - (lines.length - 1) / 2) * 3.2}
+                y={
+                  block.y +
+                  block.h / 2 +
+                  nameOffset +
+                  li * 3.2
+                }
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="map-retro-label pointer-events-none select-none"
-                style={{ fontSize: lines.length > 1 ? "2.6px" : "3px" }}
+                style={{ fontSize: lines.length > 1 ? "2.4px" : "2.8px" }}
               >
                 {line}
               </text>
             ))}
+            {statsLine && (
+              <text
+                x={block.x + block.w / 2}
+                y={block.y + block.h / 2 + 4.5}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="map-retro-stats pointer-events-none select-none"
+              >
+                {statsLine}
+              </text>
+            )}
           </a>
         );
       })}
@@ -320,6 +360,8 @@ export function CityMap2D({ districts }: { districts: Map2DDistrictData[] }) {
   };
 
   if (level === "district" && district) {
+    const districtStats = computeDistrictStats(district);
+
     return (
       <div className="rounded-lg border border-stone-200 bg-[#F5F1E6] p-3">
         <nav className="mb-2 flex flex-wrap items-center gap-2 text-sm text-stone-600">
@@ -333,6 +375,9 @@ export function CityMap2D({ districts }: { districts: Map2DDistrictData[] }) {
           <span>/</span>
           <span className="font-medium text-stone-900">{district.nameZh}</span>
         </nav>
+        <p className="mb-1 text-center text-xs font-medium text-stone-700">
+          {formatDistrictStatsLine(districtStats)}
+        </p>
         <p className="mb-2 text-center text-xs text-stone-500">
           点击街道进入街景 · 色块越深表示越热闹
         </p>

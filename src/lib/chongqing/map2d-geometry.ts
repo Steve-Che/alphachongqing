@@ -100,9 +100,9 @@ export function getCityRoadSegments(): RoadSegment[] {
   const zMin = SCENE_BOUNDS.min + 2;
   const zMax = SCENE_BOUNDS.max - 2;
 
-  const mainH = [-24, -6, 6, 18, 24];
-  const mainV = [-28, -12, 0, 14, 26];
-  const secH = [-36, -18, 0, 12, 32];
+  const mainH = [-32, -24, -6, 6, 18, 24, 38];
+  const mainV = [-28, -12, 0, 14, 26, 32];
+  const secH = [-36, -18, 0, 12, 32, 42];
   const secV = [-38, -20, -6, 8, 20, 36];
 
   const roads: RoadSegment[] = [];

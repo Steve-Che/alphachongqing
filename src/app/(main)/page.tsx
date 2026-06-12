@@ -5,6 +5,7 @@ import { DistrictList } from "@/components/map/DistrictList";
 import { ResidenceBanner } from "@/components/residence/ResidenceBanner";
 import { HomeFeedPreview } from "@/components/feed/HomeFeedPreview";
 import { WelcomeBanner } from "@/components/guide/WelcomeBanner";
+import { computeDistrictStats } from "@/lib/chongqing/district-stats";
 import { getHomePageData, getFollowingFeed } from "@/lib/queries";
 
 export const revalidate = 60;
@@ -12,6 +13,9 @@ export const revalidate = 60;
 export default async function HomePage() {
   const session = await auth();
   const { districtList, mapData, stats } = await getHomePageData();
+  const statsBySlug = Object.fromEntries(
+    mapData.map((d) => [d.slug, computeDistrictStats(d)]),
+  );
 
   const feedPreview =
     session?.user?.id
@@ -72,12 +76,18 @@ export default async function HomePage() {
             如何入驻？
           </Link>
         </div>
-        <MapViewToggle mapData={mapData} districtList={districtList} />
+        <MapViewToggle
+          mapData={mapData}
+          districtList={districtList}
+          statsBySlug={statsBySlug}
+        />
       </section>
 
       <section>
-        <h2 className="mb-3 font-serif text-lg font-semibold">六个核心区域</h2>
-        <DistrictList districts={districtList} />
+        <h2 className="mb-3 font-serif text-lg font-semibold">
+          {stats.districts} 个核心区域
+        </h2>
+        <DistrictList districts={districtList} statsBySlug={statsBySlug} />
       </section>
     </div>
   );

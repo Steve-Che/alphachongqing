@@ -6,15 +6,20 @@ import { CityMap2D, type Map2DDistrictData } from "@/components/map/CityMap2D";
 import { DistrictList } from "@/components/map/DistrictList";
 
 type DistrictListItem = Parameters<typeof DistrictList>[0]["districts"][number];
+type DistrictStatsMap = NonNullable<
+  Parameters<typeof DistrictList>[0]["statsBySlug"]
+>;
 
 type MapMode = "3d" | "2d" | "list";
 
 export function MapViewToggle({
   mapData,
   districtList,
+  statsBySlug,
 }: {
   mapData: Map2DDistrictData[];
   districtList: DistrictListItem[];
+  statsBySlug?: DistrictStatsMap;
 }) {
   const [mode, setMode] = useState<MapMode>("3d");
   const [webglFailed, setWebglFailed] = useState(false);
@@ -90,7 +95,7 @@ export function MapViewToggle({
       ) : effectiveMode === "2d" ? (
         <CityMap2D districts={mapData} />
       ) : (
-        <DistrictList districts={districtList} />
+        <DistrictList districts={districtList} statsBySlug={statsBySlug} />
       )}
     </div>
   );

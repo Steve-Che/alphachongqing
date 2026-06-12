@@ -105,6 +105,12 @@ body {
   font-family: var(--font-noto-sans), system-ui, sans-serif;
 }
 
+.map-retro-stats {
+  font-size: 2.2px;
+  fill: #7a6a5a;
+  font-family: var(--font-noto-sans), system-ui, sans-serif;
+}
+
 .map-retro-tag {
   font-size: 2px;
   fill: #ffffff;

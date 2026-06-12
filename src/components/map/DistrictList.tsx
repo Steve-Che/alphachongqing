@@ -14,7 +14,18 @@ type District = {
   streets: Street[];
 };
 
-export function DistrictList({ districts }: { districts: District[] }) {
+type DistrictStatsMap = Record<
+  string,
+  { occupiedShops: number; totalShops: number; occupiedApartments: number; totalApartments: number }
+>;
+
+export function DistrictList({
+  districts,
+  statsBySlug,
+}: {
+  districts: District[];
+  statsBySlug?: DistrictStatsMap;
+}) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {districts.map((d) => (
@@ -30,6 +41,14 @@ export function DistrictList({ districts }: { districts: District[] }) {
           </Link>
           {d.summary && (
             <p className="mt-1 text-sm text-stone-500">{d.summary}</p>
+          )}
+          {statsBySlug?.[d.slug] && (
+            <p className="mt-1 text-xs text-stone-600">
+              店铺 {statsBySlug[d.slug].occupiedShops}/{statsBySlug[d.slug].totalShops}
+              {" · "}
+              公寓 {statsBySlug[d.slug].occupiedApartments}/
+              {statsBySlug[d.slug].totalApartments}
+            </p>
           )}
           <ul className="mt-3 space-y-1 text-sm">
             {d.streets.slice(0, 4).map((s) => (

@@ -114,6 +114,38 @@ export const DISTRICTS: DistrictGeo[] = [
       { x: 14, z: 20 },
     ],
   },
+  {
+    slug: "yubei",
+    nameZh: "渝北区",
+    summary: "两江新区北岸，空港新城与龙溪商圈并立。",
+    center: { x: 30, z: -30 },
+    elevation: 4,
+    color: "#7A9E9A",
+    boundary: [
+      { x: 16, z: -42 },
+      { x: 42, z: -42 },
+      { x: 44, z: -28 },
+      { x: 42, z: -16 },
+      { x: 16, z: -16 },
+      { x: 14, z: -28 },
+    ],
+  },
+  {
+    slug: "banan",
+    nameZh: "巴南区",
+    summary: "主城南端，花溪河畔与鱼洞老城相依。",
+    center: { x: -2, z: 40 },
+    elevation: 3,
+    color: "#8B9A7B",
+    boundary: [
+      { x: -20, z: 32 },
+      { x: 18, z: 32 },
+      { x: 20, z: 36 },
+      { x: 18, z: 48 },
+      { x: -20, z: 48 },
+      { x: -22, z: 40 },
+    ],
+  },
 ];
 
 export const STREET_NAMES: Record<string, string[]> = {
@@ -176,6 +208,26 @@ export const STREET_NAMES: Record<string, string[]> = {
     "跳磴巷",
     "新山村道",
     "钢铁大道",
+  ],
+  yubei: [
+    "龙溪大道",
+    "回兴街",
+    "两路巷",
+    "照母山道",
+    "鸳鸯路",
+    "悦来新城街",
+    "空港大道",
+    "木耳巷",
+  ],
+  banan: [
+    "鱼洞老街",
+    "花溪大道",
+    "李家沱街",
+    "界石巷",
+    "南泉路",
+    "木洞古镇巷",
+    "龙洲湾大道",
+    "一品街",
   ],
 };
 
